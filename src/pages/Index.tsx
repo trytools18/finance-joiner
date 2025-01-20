@@ -27,30 +27,72 @@ const features = [
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-white overflow-hidden">
       {/* Hero Section */}
-      <section className="relative py-20 px-4 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-grid-gray-200/50 bg-[size:20px_20px] opacity-20" />
-        
+      <section className="relative pt-20 pb-32">
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -rotate-12 -translate-y-1/2 -translate-x-1/4 w-[150%] h-[150%] bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 opacity-70" />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_500px_at_50%_200px,rgba(37,99,235,0.1),transparent)]" />
+        </div>
+
         {/* Floating Elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full animate-float blur-xl" />
-        <div className="absolute bottom-20 right-10 w-32 h-32 bg-secondary/10 rounded-full animate-float blur-xl" style={{ animationDelay: "1s" }} />
-        
-        <div className="container mx-auto relative">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent animate-fade-in">
-              Smart Financial Tracking for Your Business
-            </h1>
-            
-            <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              Take control of your business finances with our powerful tracking and analytics platform.
-              Join the waitlist to be first in line when we launch.
-            </p>
-            
-            <div className="flex justify-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
-              <div className="w-full max-w-md p-4 backdrop-blur-sm bg-white/50 rounded-lg shadow-lg border border-gray-200/50">
-                <WaitlistForm />
+        <div className="absolute top-40 left-[10%] w-64 h-64 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-[10%] w-72 h-72 rounded-full bg-gradient-to-r from-secondary/20 to-accent/20 blur-3xl animate-float" style={{ animationDelay: "1s" }} />
+
+        {/* Grid Pattern */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 0V20M20 0V20M0 1H20M0 20H20' stroke='%23E5E7EB' stroke-width='0.5'/%3E%3C/svg%3E")`,
+          maskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
+        }} />
+
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-5xl mx-auto">
+            {/* Content */}
+            <div className="text-center space-y-8">
+              <div className="inline-block animate-fade-in">
+                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 text-primary">
+                  ✨ Coming Soon
+                </span>
+              </div>
+
+              <h1 className="text-4xl md:text-7xl font-bold tracking-tight animate-fade-in">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent">
+                  Smart Financial Tracking
+                </span>
+                <br />
+                <span className="text-gray-900">
+                  for Your Business
+                </span>
+              </h1>
+
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
+                Take control of your business finances with our powerful tracking and analytics platform.
+                Join the waitlist to be first in line when we launch.
+              </p>
+
+              <div className="flex justify-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
+                <div className="w-full max-w-md">
+                  <div className="backdrop-blur-sm bg-white/80 rounded-xl shadow-[0_0_0_1px_rgba(0,0,0,0.08)] p-4 hover:shadow-lg transition-shadow duration-300">
+                    <WaitlistForm />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-8 max-w-3xl mx-auto mt-16 animate-fade-in" style={{ animationDelay: "0.6s" }}>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-gray-900">2K+</div>
+                  <div className="text-sm text-gray-600">Early Signups</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-gray-900">98%</div>
+                  <div className="text-sm text-gray-600">Satisfaction Rate</div>
+                </div>
+                <div className="text-center md:col-span-1 col-span-2">
+                  <div className="text-3xl font-bold text-gray-900">24/7</div>
+                  <div className="text-sm text-gray-600">Support</div>
+                </div>
               </div>
             </div>
           </div>
