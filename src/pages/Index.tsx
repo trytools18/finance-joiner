@@ -1,8 +1,8 @@
-import { BarChart3, PieChart, TrendingUp, Wallet, CreditCard, Clock, DollarSign } from "lucide-react";
+import { BarChart3, PieChart, TrendingUp, Wallet } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
 import { ChartContainer } from "@/components/ui/chart";
-import { AreaChart, Area, BarChart, Bar, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
 
 const features = [
   {
@@ -28,7 +28,7 @@ const features = [
 ];
 
 // Sample data for decorative charts
-const areaData = [
+const data = [
   { value: 30 },
   { value: 40 },
   { value: 35 },
@@ -41,89 +41,25 @@ const areaData = [
   { value: 80 },
 ];
 
-const barData = [
-  { month: 'Jan', amount: 1500 },
-  { month: 'Feb', amount: 2300 },
-  { month: 'Mar', amount: 1800 },
-  { month: 'Apr', amount: 2600 },
-  { month: 'May', amount: 2100 },
-  { month: 'Jun', amount: 2800 },
-];
-
-const DecorativeChart = ({ className, type = "area" }: { className?: string; type?: "area" | "bar" }) => (
+const DecorativeChart = ({ className }: { className?: string }) => (
   <div className={className}>
     <ResponsiveContainer width="100%" height="100%">
-      {type === "area" ? (
-        <AreaChart data={areaData}>
-          <defs>
-            <linearGradient id="decorativeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(37, 99, 235, 0.2)" />
-              <stop offset="100%" stopColor="rgba(99, 102, 241, 0.05)" />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke="rgba(37, 99, 235, 0.3)"
-            fill="url(#decorativeGradient)"
-            strokeWidth={2}
-          />
-        </AreaChart>
-      ) : (
-        <BarChart data={barData}>
-          <Bar dataKey="amount" fill="rgba(37, 99, 235, 0.2)" />
-        </BarChart>
-      )}
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="decorativeGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(37, 99, 235, 0.2)" />
+            <stop offset="100%" stopColor="rgba(99, 102, 241, 0.05)" />
+          </linearGradient>
+        </defs>
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke="rgba(37, 99, 235, 0.3)"
+          fill="url(#decorativeGradient)"
+          strokeWidth={2}
+        />
+      </AreaChart>
     </ResponsiveContainer>
-  </div>
-);
-
-const DecorativeDashboard = () => (
-  <div className="absolute inset-0 pointer-events-none">
-    {/* Main Chart */}
-    <div className="absolute top-40 -right-20 w-[500px] h-[300px] bg-white/30 backdrop-blur-sm rounded-xl border border-white/20 shadow-xl opacity-20">
-      <DecorativeChart type="bar" className="w-full h-full" />
-    </div>
-
-    {/* Stats Cards */}
-    <div className="absolute top-20 -left-10 flex gap-4 opacity-20">
-      {[
-        { icon: DollarSign, value: "$1,500", label: "Revenue" },
-        { icon: CreditCard, value: "$500", label: "Expenses" },
-        { icon: Clock, value: "$1,200", label: "Pending" },
-      ].map((stat, index) => (
-        <div
-          key={index}
-          className="w-[180px] h-[100px] bg-white/30 backdrop-blur-sm rounded-xl border border-white/20 shadow-xl p-4 flex flex-col justify-center"
-        >
-          <div className="flex items-center gap-2">
-            <stat.icon className="w-5 h-5 text-primary/50" />
-            <span className="text-lg font-semibold text-gray-800">{stat.value}</span>
-          </div>
-          <span className="text-sm text-gray-600">{stat.label}</span>
-        </div>
-      ))}
-    </div>
-
-    {/* Transaction List */}
-    <div className="absolute bottom-20 left-1/4 w-[400px] h-[200px] bg-white/30 backdrop-blur-sm rounded-xl border border-white/20 shadow-xl opacity-20 p-4">
-      <div className="space-y-3">
-        {[1, 2, 3].map((item) => (
-          <div key={item} className="flex items-center gap-3 border-b border-gray-100 pb-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10" />
-            <div className="flex-1">
-              <div className="h-3 w-24 bg-gray-200 rounded" />
-              <div className="h-2 w-16 bg-gray-100 rounded mt-1" />
-            </div>
-            <div className="h-3 w-16 bg-gray-200 rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
-
-    {/* Small Area Charts */}
-    <DecorativeChart className="absolute top-60 -left-20 w-[300px] h-[150px] opacity-20 rotate-[5deg]" />
-    <DecorativeChart className="absolute bottom-40 right-20 w-[250px] h-[125px] opacity-15 -rotate-[10deg]" />
   </div>
 );
 
@@ -138,8 +74,12 @@ const Index = () => {
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_500px_at_50%_200px,rgba(37,99,235,0.1),transparent)]" />
         </div>
 
-        {/* Dashboard Elements */}
-        <DecorativeDashboard />
+        {/* Decorative Charts */}
+        <div className="absolute inset-0 pointer-events-none">
+          <DecorativeChart className="absolute top-20 -left-20 w-[400px] h-[200px] opacity-30 rotate-[10deg]" />
+          <DecorativeChart className="absolute top-40 -right-20 w-[300px] h-[150px] opacity-20 -rotate-[15deg]" />
+          <DecorativeChart className="absolute bottom-20 left-1/4 w-[350px] h-[175px] opacity-25 rotate-[5deg]" />
+        </div>
 
         {/* Floating Elements */}
         <div className="absolute top-40 left-[10%] w-64 h-64 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 blur-3xl animate-float" />
