@@ -1,6 +1,8 @@
 import { BarChart3, PieChart, TrendingUp, Wallet } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
+import { ChartContainer } from "@/components/ui/chart";
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
 
 const features = [
   {
@@ -25,6 +27,42 @@ const features = [
   },
 ];
 
+// Sample data for decorative charts
+const data = [
+  { value: 30 },
+  { value: 40 },
+  { value: 35 },
+  { value: 50 },
+  { value: 45 },
+  { value: 60 },
+  { value: 55 },
+  { value: 70 },
+  { value: 65 },
+  { value: 80 },
+];
+
+const DecorativeChart = ({ className }: { className?: string }) => (
+  <div className={className}>
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="decorativeGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(37, 99, 235, 0.2)" />
+            <stop offset="100%" stopColor="rgba(99, 102, 241, 0.05)" />
+          </linearGradient>
+        </defs>
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke="rgba(37, 99, 235, 0.3)"
+          fill="url(#decorativeGradient)"
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
+);
+
 const Index = () => {
   return (
     <div className="min-h-screen bg-white overflow-hidden">
@@ -34,6 +72,13 @@ const Index = () => {
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -rotate-12 -translate-y-1/2 -translate-x-1/4 w-[150%] h-[150%] bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 opacity-70" />
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_500px_at_50%_200px,rgba(37,99,235,0.1),transparent)]" />
+        </div>
+
+        {/* Decorative Charts */}
+        <div className="absolute inset-0 pointer-events-none">
+          <DecorativeChart className="absolute top-20 -left-20 w-[400px] h-[200px] opacity-30 rotate-[10deg]" />
+          <DecorativeChart className="absolute top-40 -right-20 w-[300px] h-[150px] opacity-20 -rotate-[15deg]" />
+          <DecorativeChart className="absolute bottom-20 left-1/4 w-[350px] h-[175px] opacity-25 rotate-[5deg]" />
         </div>
 
         {/* Floating Elements */}
