@@ -65,9 +65,9 @@ const DecorativeChart = ({ className }: { className?: string }) => (
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32">
+      <section className="relative pt-20 pb-32 overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -rotate-12 -translate-y-1/2 -translate-x-1/4 w-[150%] h-[150%] bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 opacity-70" />
@@ -144,24 +144,30 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-4 bg-white relative z-10">
-        <div className="container mx-auto relative bg-white">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
-            Why Choose Our Platform?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-            {features.map((feature) => (
-              <FeatureCard
-                key={feature.title}
-                title={feature.title}
-                description={feature.description}
-                Icon={feature.Icon}
-              />
-            ))}
+      {/* Features Section - Now with improved isolation */}
+      <div className="relative">
+        {/* White overlay to ensure complete separation from animated background */}
+        <div className="absolute inset-0 bg-white" />
+        
+        {/* Features content */}
+        <section className="relative py-20 px-4">
+          <div className="container mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
+              Why Choose Our Platform?
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {features.map((feature) => (
+                <FeatureCard
+                  key={feature.title}
+                  title={feature.title}
+                  description={feature.description}
+                  Icon={feature.Icon}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 };
