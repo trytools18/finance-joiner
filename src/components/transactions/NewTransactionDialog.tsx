@@ -35,10 +35,8 @@ export function NewTransactionDialog() {
       category: formData.get("category") as TransactionCategory,
       amount: Number(formData.get("amount")),
       vat: Number(formData.get("vat")?.toString().replace("%", "")) / 100,
-      vat_clearable: formData.get("vat_clearable") === "on",
       party: formData.get("party")?.toString() || null,
       payment_method: formData.get("payment_method") as PaymentMethod,
-      description: formData.get("description")?.toString() || null,
       status: "completed" as TransactionStatus,
       user_id: user.id,
     };
@@ -142,11 +140,6 @@ export function NewTransactionDialog() {
                 />
               </PopoverContent>
             </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Input name="description" />
           </div>
 
           <div className="space-y-2">
