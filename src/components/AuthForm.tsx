@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ReloadIcon } from "@radix-ui/react-icons";
+import { Loader2 } from "lucide-react";
 
 export const AuthForm = () => {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -54,7 +54,7 @@ export const AuthForm = () => {
         />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
+        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {isSignIn ? "Sign In" : "Sign Up"}
       </Button>
       <Button
