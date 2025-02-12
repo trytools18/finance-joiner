@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/stats/StatCard";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { NewTransactionDialog } from "@/components/transactions/NewTransactionDialog";
+import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
@@ -105,7 +106,10 @@ const Index = () => {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <NewTransactionDialog />
+          <div className="flex items-center gap-2">
+            <NewTransactionDialog />
+            <ProfileMenu />
+          </div>
         </div>
         
         <div className="grid gap-4 md:grid-cols-3">
