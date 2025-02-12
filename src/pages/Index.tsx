@@ -10,6 +10,7 @@ import { StatCard } from "@/components/stats/StatCard";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency } from "@/lib/utils";
 
 const features = [
   {
@@ -211,7 +212,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Features Section - Completely separate from hero section */}
       <div className="w-full bg-white border-t">
         <div className="isolate relative z-10">
           <section className="py-20 px-4">
