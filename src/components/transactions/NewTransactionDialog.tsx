@@ -14,6 +14,10 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
+type TransactionCategory = "income" | "expense" | "transfer";
+type PaymentMethod = "cash" | "card" | "online";
+type TransactionStatus = "completed" | "pending" | "cancelled";
+
 export function NewTransactionDialog() {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
@@ -23,22 +27,25 @@ export function NewTransactionDialog() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return;
+
     const transaction = {
       date: date.toISOString(),
-      category: formData.get("category"),
+      category: formData.get("category") as TransactionCategory,
       amount: Number(formData.get("amount")),
       vat: Number(formData.get("vat")?.toString().replace("%", "")) / 100,
       vat_clearable: formData.get("vat_clearable") === "on",
-      party: formData.get("party"),
-      payment_method: formData.get("payment_method"),
-      description: formData.get("description"),
-      status: "completed",
-      user_id: (await supabase.auth.getUser()).data.user?.id,
+      party: formData.get("party")?.toString() || null,
+      payment_method: formData.get("payment_method") as PaymentMethod,
+      description: formData.get("description")?.toString() || null,
+      status: "completed" as TransactionStatus,
+      user_id: user.id,
     };
 
     const { error } = await supabase
       .from("transactions")
-      .insert([transaction]);
+      .insert(transaction);
 
     if (!error) {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
