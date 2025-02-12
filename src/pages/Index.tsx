@@ -3,6 +3,9 @@ import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
 import { ChartContainer } from "@/components/ui/chart";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
+import { AuthForm } from "@/components/AuthForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const features = [
   {
@@ -64,6 +67,8 @@ const DecorativeChart = ({ className }: { className?: string }) => (
 );
 
 const Index = () => {
+  const { user } = useAuth();
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section - In its own container */}
@@ -116,7 +121,16 @@ const Index = () => {
               <div className="flex justify-center animate-fade-in">
                 <div className="w-full max-w-md">
                   <div className="backdrop-blur-sm bg-white/80 rounded-xl shadow-[0_0_0_1px_rgba(0,0,0,0.08)] p-4 hover:shadow-lg transition-shadow duration-300">
-                    <WaitlistForm />
+                    {user ? (
+                      <div className="text-center space-y-4">
+                        <p className="text-gray-600">Welcome back, {user.email}!</p>
+                        <Button onClick={() => window.location.href = "/dashboard"}>
+                          Go to Dashboard
+                        </Button>
+                      </div>
+                    ) : (
+                      <AuthForm />
+                    )}
                   </div>
                 </div>
               </div>
