@@ -30,6 +30,48 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at: string
+          date: string
+          id: string
+          party: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          status: Database["public"]["Enums"]["transaction_status"]
+          updated_at: string
+          user_id: string
+          vat: number | null
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string
+          date?: string
+          id?: string
+          party?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          status?: Database["public"]["Enums"]["transaction_status"]
+          updated_at?: string
+          user_id: string
+          vat?: number | null
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string
+          date?: string
+          id?: string
+          party?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          status?: Database["public"]["Enums"]["transaction_status"]
+          updated_at?: string
+          user_id?: string
+          vat?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -38,7 +80,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      payment_method: "cash" | "card" | "online"
+      transaction_category: "income" | "expense" | "transfer"
+      transaction_status: "completed" | "pending" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never

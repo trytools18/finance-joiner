@@ -6,6 +6,10 @@ import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { AuthForm } from "@/components/AuthForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/stats/StatCard";
+import { TransactionTable } from "@/components/transactions/TransactionTable";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const features = [
   {
@@ -69,9 +73,71 @@ const DecorativeChart = ({ className }: { className?: string }) => (
 const Index = () => {
   const { user } = useAuth();
 
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const totalIncome = transactions
+    .filter((t) => t.category === "income")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalExpenses = transactions
+    .filter((t) => t.category === "expense")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const balance = totalIncome - totalExpenses;
+
+  if (user) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard
+            title="Balance"
+            value={formatCurrency(balance)}
+            icon={Wallet}
+            description="Current balance"
+          />
+          <StatCard
+            title="Income"
+            value={formatCurrency(totalIncome)}
+            icon={TrendingUp}
+            trend={{ value: 12.5, isPositive: true }}
+          />
+          <StatCard
+            title="Expenses"
+            value={formatCurrency(totalExpenses)}
+            icon={BarChart3}
+            trend={{ value: 8.2, isPositive: false }}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Recent Transactions</h2>
+            <Button variant="outline" size="icon">
+              <TrendingUp className="h-4 w-4" />
+            </Button>
+          </div>
+          <TransactionTable transactions={transactions} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Hero Section - In its own container */}
       <div className="relative min-h-screen bg-white">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -rotate-12 -translate-y-1/2 -translate-x-1/4 w-[150%] h-[150%] bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 opacity-70" />
@@ -121,16 +187,7 @@ const Index = () => {
               <div className="flex justify-center animate-fade-in">
                 <div className="w-full max-w-md">
                   <div className="backdrop-blur-sm bg-white/80 rounded-xl shadow-[0_0_0_1px_rgba(0,0,0,0.08)] p-4 hover:shadow-lg transition-shadow duration-300">
-                    {user ? (
-                      <div className="text-center space-y-4">
-                        <p className="text-gray-600">Welcome back, {user.email}!</p>
-                        <Button onClick={() => window.location.href = "/dashboard"}>
-                          Go to Dashboard
-                        </Button>
-                      </div>
-                    ) : (
-                      <AuthForm />
-                    )}
+                    <AuthForm />
                   </div>
                 </div>
               </div>
