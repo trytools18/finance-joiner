@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      organization_settings: {
+        Row: {
+          created_at: string
+          default_currency: Database["public"]["Enums"]["currency_code"]
+          default_payment_method: Database["public"]["Enums"]["payment_method"]
+          default_vat_rate: number
+          fiscal_year_start: string
+          id: string
+          updated_at: string
+          user_id: string
+          vat_rates: Json
+        }
+        Insert: {
+          created_at?: string
+          default_currency?: Database["public"]["Enums"]["currency_code"]
+          default_payment_method?: Database["public"]["Enums"]["payment_method"]
+          default_vat_rate?: number
+          fiscal_year_start?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          vat_rates?: Json
+        }
+        Update: {
+          created_at?: string
+          default_currency?: Database["public"]["Enums"]["currency_code"]
+          default_payment_method?: Database["public"]["Enums"]["payment_method"]
+          default_vat_rate?: number
+          fiscal_year_start?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          vat_rates?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -80,6 +116,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      currency_code: "USD" | "EUR" | "GBP"
       payment_method: "cash" | "card" | "online"
       transaction_category: "income" | "expense" | "transfer"
       transaction_status: "completed" | "pending" | "cancelled"

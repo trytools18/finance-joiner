@@ -10,9 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Briefcase, LogOut, User, UserCog } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export function ProfileMenu() {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <DropdownMenu>
@@ -33,7 +35,7 @@ export function ProfileMenu() {
           <UserCog className="mr-2 h-4 w-4" />
           Profile Settings
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/organization-settings")}>
           <Briefcase className="mr-2 h-4 w-4" />
           Organizations
         </DropdownMenuItem>
