@@ -21,9 +21,10 @@ export interface Transaction {
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  currencyCode?: "USD" | "EUR" | "GBP";
 }
 
-export const TransactionTable = ({ transactions }: TransactionTableProps) => {
+export const TransactionTable = ({ transactions, currencyCode = "USD" }: TransactionTableProps) => {
   return (
     <div className="rounded-md border">
       <Table>
@@ -43,7 +44,7 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
               <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
               <TableCell>{transaction.party}</TableCell>
               <TableCell className="capitalize">{transaction.category}</TableCell>
-              <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+              <TableCell>{formatCurrency(transaction.amount, currencyCode)}</TableCell>
               <TableCell className="capitalize">{transaction.status}</TableCell>
               <TableCell className="capitalize">{transaction.payment_method}</TableCell>
             </TableRow>

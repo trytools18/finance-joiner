@@ -1,4 +1,3 @@
-
 import { BarChart3, PieChart, TrendingUp, Wallet } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
@@ -14,6 +13,7 @@ import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
+import type { OrganizationSettings } from "./organization-settings/types";
 
 const features = [
   {
@@ -77,6 +77,23 @@ const DecorativeChart = ({ className }: { className?: string }) => (
 const Index = () => {
   const { user } = useAuth();
 
+  const { data: settings } = useQuery({
+    queryKey: ["organization-settings", user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error("No user found");
+
+      const { data, error } = await supabase
+        .from("organization_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as OrganizationSettings;
+    },
+    enabled: !!user,
+  });
+
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
@@ -101,13 +118,21 @@ const Index = () => {
 
   const balance = totalIncome - totalExpenses;
 
+  const formatAmount = (amount: number) => {
+    return formatCurrency(amount, settings?.default_currency || 'USD');
+  };
+
   if (user) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-2">
-            <NewTransactionDialog />
+            <NewTransactionDialog 
+              defaultPaymentMethod={settings?.default_payment_method}
+              defaultVatRate={settings?.default_vat_rate}
+              vatRates={settings?.vat_rates as number[]}
+            />
             <ProfileMenu />
           </div>
         </div>
@@ -115,19 +140,19 @@ const Index = () => {
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard
             title="Balance"
-            value={formatCurrency(balance)}
+            value={formatAmount(balance)}
             icon={Wallet}
             description="Current balance"
           />
           <StatCard
             title="Income"
-            value={formatCurrency(totalIncome)}
+            value={formatAmount(totalIncome)}
             icon={TrendingUp}
             trend={{ value: 12.5, isPositive: true }}
           />
           <StatCard
             title="Expenses"
-            value={formatCurrency(totalExpenses)}
+            value={formatAmount(totalExpenses)}
             icon={BarChart3}
             trend={{ value: 8.2, isPositive: false }}
           />
@@ -140,7 +165,10 @@ const Index = () => {
               <TrendingUp className="h-4 w-4" />
             </Button>
           </div>
-          <TransactionTable transactions={transactions} />
+          <TransactionTable 
+            transactions={transactions} 
+            currencyCode={settings?.default_currency}
+          />
         </div>
       </div>
     );
