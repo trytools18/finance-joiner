@@ -44,6 +44,16 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Create a type for the default settings to match Supabase's expected types
+type OrganizationSettings = {
+  user_id: string;
+  default_currency: "USD" | "EUR" | "GBP";
+  default_payment_method: "cash" | "card" | "online";
+  fiscal_year_start: string;
+  default_vat_rate: number;
+  vat_rates: Json;
+};
+
 export default function OrganizationSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,7 +74,7 @@ export default function OrganizationSettings() {
       
       // If no settings exist, create default settings
       if (!data) {
-        const defaultSettings = {
+        const defaultSettings: OrganizationSettings = {
           user_id: user.id,
           default_currency: "USD",
           default_payment_method: "online",
