@@ -27,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +35,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Json } from "@/integrations/supabase/types";
+import { Link } from "react-router-dom";
+import { ProfileMenu } from "@/components/profile/ProfileMenu";
+
+const DEFAULT_VAT_RATES = [0.06, 0.13, 0.24];
 
 const formSchema = z.object({
   default_currency: z.enum(["USD", "EUR", "GBP"]),
@@ -46,7 +50,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Create a type for the default settings to match Supabase's expected types
 type OrganizationSettings = {
   user_id: string;
   default_currency: "USD" | "EUR" | "GBP";
@@ -60,6 +63,7 @@ export default function OrganizationSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [customVatRate, setCustomVatRate] = useState("");
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
@@ -74,7 +78,6 @@ export default function OrganizationSettings() {
 
       if (error) throw error;
       
-      // If no settings exist, create default settings
       if (!data) {
         const defaultSettings: OrganizationSettings = {
           user_id: user.id,
@@ -82,7 +85,7 @@ export default function OrganizationSettings() {
           default_payment_method: "online",
           fiscal_year_start: format(new Date(), "yyyy-MM-dd"),
           default_vat_rate: 0.24,
-          vat_rates: [],
+          vat_rates: DEFAULT_VAT_RATES,
         };
 
         const { data: newData, error: insertError } = await supabase
@@ -107,9 +110,27 @@ export default function OrganizationSettings() {
       default_payment_method: "online",
       fiscal_year_start: new Date(),
       default_vat_rate: 0.24,
-      vat_rates: [],
+      vat_rates: DEFAULT_VAT_RATES,
     },
   });
+
+  const handleAddCustomVatRate = () => {
+    const rate = parseFloat(customVatRate) / 100;
+    if (isNaN(rate) || rate < 0 || rate > 1) {
+      toast({
+        title: "Invalid VAT rate",
+        description: "Please enter a valid percentage between 0 and 100",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const currentRates = form.getValues("vat_rates");
+    if (!currentRates.includes(rate)) {
+      form.setValue("vat_rates", [...currentRates, rate].sort((a, b) => a - b));
+      setCustomVatRate("");
+    }
+  };
 
   useEffect(() => {
     if (settings) {
@@ -118,10 +139,9 @@ export default function OrganizationSettings() {
         default_payment_method: settings.default_payment_method,
         fiscal_year_start: new Date(settings.fiscal_year_start),
         default_vat_rate: settings.default_vat_rate,
-        // Parse the JSON array into a number array
         vat_rates: Array.isArray(settings.vat_rates) 
           ? settings.vat_rates.map(Number)
-          : [],
+          : DEFAULT_VAT_RATES,
       });
     }
   }, [settings, form]);
@@ -165,126 +185,171 @@ export default function OrganizationSettings() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-8">Organization Settings</h1>
-      
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="default_currency"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Default Currency</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a currency" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="GBP">GBP (£)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div>
+      <div className="border-b">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/" className="hover:opacity-70">
+              <ArrowLeft className="h-6 w-6" />
+            </Link>
+            <h1 className="text-xl font-semibold">Organization Settings</h1>
+          </div>
+          <ProfileMenu />
+        </div>
+      </div>
 
-          <FormField
-            control={form.control}
-            name="default_payment_method"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Default Payment Method</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a payment method" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="online">Online</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="fiscal_year_start"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Fiscal Year Start</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+      <div className="container mx-auto p-6 max-w-2xl">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="default_currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Currency</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a currency" />
+                      </SelectTrigger>
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="default_vat_rate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Default VAT Rate</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Enter the VAT rate as a decimal (e.g., 0.24 for 24%)
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="default_payment_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Payment Method</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a payment method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="online">Online</SelectItem>
+                      <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Button type="submit" className="w-full">
-            Save Settings
-          </Button>
-        </form>
-      </Form>
+            <FormField
+              control={form.control}
+              name="fiscal_year_start"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Fiscal Year Start</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date > new Date() || date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="default_vat_rate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default VAT Rate</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(parseFloat(value))}
+                    value={field.value.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select VAT rate" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {form.watch("vat_rates").map((rate) => (
+                        <SelectItem key={rate} value={rate.toString()}>
+                          {(rate * 100).toFixed(0)}%
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-2">
+              <FormLabel>Custom VAT Rates</FormLabel>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Add new VAT rate (%)"
+                  value={customVatRate}
+                  onChange={(e) => setCustomVatRate(e.target.value)}
+                  min="0"
+                  max="100"
+                />
+                <Button type="button" onClick={handleAddCustomVatRate}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {form.watch("vat_rates").map((rate) => (
+                  <div
+                    key={rate}
+                    className="bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm"
+                  >
+                    {(rate * 100).toFixed(0)}%
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full">
+              Save Settings
+            </Button>
+          </form>
+        </Form>
+      </div>
     </div>
   );
 }
