@@ -96,9 +96,14 @@ export default function OrganizationSettings() {
       const { error } = await supabase
         .from("organization_settings")
         .upsert({
-          ...values,
-          fiscal_year_start: format(values.fiscal_year_start, "yyyy-MM-dd"),
           user_id: user.id,
+          default_currency: values.default_currency,
+          default_payment_method: values.default_payment_method,
+          fiscal_year_start: format(values.fiscal_year_start, "yyyy-MM-dd"),
+          default_vat_rate: values.default_vat_rate,
+          vat_rates: values.vat_rates,
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
@@ -110,7 +115,8 @@ export default function OrganizationSettings() {
         description: "Your organization settings have been updated successfully.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error saving settings:", error);
       toast({
         title: "Error",
         description: "Failed to save settings. Please try again.",
