@@ -79,7 +79,10 @@ export default function OrganizationSettings() {
         default_payment_method: settings.default_payment_method,
         fiscal_year_start: new Date(settings.fiscal_year_start),
         default_vat_rate: settings.default_vat_rate,
-        vat_rates: settings.vat_rates,
+        // Parse the JSON array into a number array
+        vat_rates: Array.isArray(settings.vat_rates) 
+          ? settings.vat_rates.map(Number)
+          : [],
       });
     }
   }, [settings, form]);
