@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
   default_currency: z.enum(["USD", "EUR", "GBP"]),
@@ -47,18 +47,45 @@ type FormValues = z.infer<typeof formSchema>;
 export default function OrganizationSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: settings, isLoading } = useQuery({
-    queryKey: ["organization-settings"],
+    queryKey: ["organization-settings", user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error("No user found");
+
       const { data, error } = await supabase
         .from("organization_settings")
         .select("*")
-        .single();
+        .eq("user_id", user.id)
+        .maybeSingle();
 
       if (error) throw error;
+      
+      // If no settings exist, create default settings
+      if (!data) {
+        const defaultSettings = {
+          user_id: user.id,
+          default_currency: "USD",
+          default_payment_method: "online",
+          fiscal_year_start: format(new Date(), "yyyy-MM-dd"),
+          default_vat_rate: 0.24,
+          vat_rates: [],
+        };
+
+        const { data: newData, error: insertError } = await supabase
+          .from("organization_settings")
+          .insert(defaultSettings)
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        return newData;
+      }
+
       return data;
     },
+    enabled: !!user?.id,
   });
 
   const form = useForm<FormValues>({
@@ -89,18 +116,20 @@ export default function OrganizationSettings() {
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      if (!user?.id) throw new Error("No user found");
+
       const { error } = await supabase
         .from("organization_settings")
         .upsert({
           ...values,
           fiscal_year_start: format(values.fiscal_year_start, "yyyy-MM-dd"),
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: user.id,
         });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organization-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["organization-settings", user?.id] });
       toast({
         title: "Settings saved",
         description: "Your organization settings have been updated successfully.",
