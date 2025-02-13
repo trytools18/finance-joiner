@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +34,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Json } from "@/integrations/supabase/types";
 
 const formSchema = z.object({
   default_currency: z.enum(["USD", "EUR", "GBP"]),
