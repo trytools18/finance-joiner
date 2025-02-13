@@ -18,7 +18,17 @@ type TransactionCategory = "income" | "expense" | "transfer";
 type PaymentMethod = "cash" | "card" | "online";
 type TransactionStatus = "completed" | "pending" | "cancelled";
 
-export function NewTransactionDialog() {
+interface NewTransactionDialogProps {
+  defaultPaymentMethod?: PaymentMethod;
+  defaultVatRate?: number;
+  vatRates?: number[];
+}
+
+export function NewTransactionDialog({ 
+  defaultPaymentMethod = "online",
+  defaultVatRate = 0.24,
+  vatRates = [0.24, 0.14, 0.10, 0]
+}: NewTransactionDialogProps) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const queryClient = useQueryClient();
@@ -98,15 +108,16 @@ export function NewTransactionDialog() {
 
           <div className="space-y-2">
             <Label>VAT Rate</Label>
-            <Select name="vat" defaultValue="0.24">
+            <Select name="vat" defaultValue={defaultVatRate.toString()}>
               <SelectTrigger>
                 <SelectValue placeholder="Select VAT rate" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0.24">24%</SelectItem>
-                <SelectItem value="0.14">14%</SelectItem>
-                <SelectItem value="0.10">10%</SelectItem>
-                <SelectItem value="0">0%</SelectItem>
+                {vatRates.map((rate) => (
+                  <SelectItem key={rate} value={rate.toString()}>
+                    {(rate * 100).toFixed(0)}%
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -144,7 +155,7 @@ export function NewTransactionDialog() {
 
           <div className="space-y-2">
             <Label>Payment Method</Label>
-            <Select name="payment_method" required>
+            <Select name="payment_method" defaultValue={defaultPaymentMethod} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select payment method" />
               </SelectTrigger>
