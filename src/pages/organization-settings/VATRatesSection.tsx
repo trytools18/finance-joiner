@@ -1,8 +1,7 @@
 
 import { useState } from "react";
-import { useForm, useFormContext } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   FormControl,
@@ -14,7 +13,10 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -44,6 +46,13 @@ export function VATRatesSection() {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCustomVatRate();
+    }
+  };
+
   return (
     <>
       <FormField
@@ -62,11 +71,31 @@ export function VATRatesSection() {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {form.watch("vat_rates").map((rate) => (
-                  <SelectItem key={rate} value={rate.toString()}>
-                    {(rate * 100).toFixed(0)}%
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>Available VAT Rates</SelectLabel>
+                  {form.watch("vat_rates").map((rate) => (
+                    <SelectItem key={rate} value={rate.toString()}>
+                      {(rate * 100).toFixed(0)}%
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    <Input
+                      type="number"
+                      placeholder="Add new rate (%)"
+                      value={customVatRate}
+                      onChange={(e) => setCustomVatRate(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      min="0"
+                      max="100"
+                      className="h-8"
+                    />
+                    <Plus 
+                      className="h-4 w-4 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground" 
+                      onClick={handleAddCustomVatRate}
+                    />
+                  </div>
+                </SelectGroup>
               </SelectContent>
             </Select>
             <FormMessage />
@@ -76,20 +105,7 @@ export function VATRatesSection() {
 
       <div className="space-y-2">
         <FormLabel>Custom VAT Rates</FormLabel>
-        <div className="flex gap-2">
-          <Input
-            type="number"
-            placeholder="Add new VAT rate (%)"
-            value={customVatRate}
-            onChange={(e) => setCustomVatRate(e.target.value)}
-            min="0"
-            max="100"
-          />
-          <Button type="button" onClick={handleAddCustomVatRate}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2 mt-2">
+        <div className="flex flex-wrap gap-2">
           {form.watch("vat_rates").map((rate) => (
             <div
               key={rate}
