@@ -1,3 +1,4 @@
+
 import { BarChart3, PieChart, TrendingUp, Wallet } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
@@ -132,6 +133,7 @@ const Index = () => {
               defaultPaymentMethod={settings?.default_payment_method}
               defaultVatRate={settings?.default_vat_rate}
               vatRates={settings?.vat_rates as number[]}
+              defaultCurrency={settings?.default_currency}
             />
             <ProfileMenu />
           </div>

@@ -22,12 +22,14 @@ interface NewTransactionDialogProps {
   defaultPaymentMethod?: PaymentMethod;
   defaultVatRate?: number;
   vatRates?: number[];
+  defaultCurrency?: "USD" | "EUR" | "GBP";
 }
 
 export function NewTransactionDialog({ 
   defaultPaymentMethod = "online",
   defaultVatRate = 0.24,
-  vatRates = [0.24, 0.14, 0.10, 0]
+  vatRates = [0.24, 0.14, 0.10, 0],
+  defaultCurrency = "USD"
 }: NewTransactionDialogProps) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
@@ -155,7 +157,7 @@ export function NewTransactionDialog({
 
           <div className="space-y-2">
             <Label>Payment Method</Label>
-            <Select name="payment_method" defaultValue={defaultPaymentMethod} required>
+            <Select name="payment_method" defaultValue={defaultPaymentMethod}>
               <SelectTrigger>
                 <SelectValue placeholder="Select payment method" />
               </SelectTrigger>
