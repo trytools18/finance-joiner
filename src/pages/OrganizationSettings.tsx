@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { BasicSettingsFields } from "./organization-settings/BasicSettingsFields";
 import { VATRatesSection } from "./organization-settings/VATRatesSection";
+import { TransactionPartiesSection } from "./organization-settings/TransactionPartiesSection";
 import { 
   DEFAULT_VAT_RATES, 
   formSchema, 
@@ -147,15 +150,28 @@ export default function OrganizationSettings() {
       </div>
 
       <div className="container mx-auto p-6 max-w-2xl">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <BasicSettingsFields />
-            <VATRatesSection />
-            <Button type="submit" className="w-full">
-              Save Settings
-            </Button>
-          </form>
-        </Form>
+        <Tabs defaultValue="basic" className="space-y-6">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="basic">Basic Settings</TabsTrigger>
+            <TabsTrigger value="parties">Transaction Parties</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="basic" className="space-y-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <BasicSettingsFields />
+                <VATRatesSection />
+                <Button type="submit" className="w-full">
+                  Save Settings
+                </Button>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="parties">
+            <TransactionPartiesSection />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
