@@ -12,11 +12,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type TransactionCategory = "income" | "expense" | "transfer";
 type PaymentMethod = "cash" | "card" | "online";
 type TransactionStatus = "completed" | "pending" | "cancelled";
+
+interface TransactionParty {
+  id: string;
+  name: string;
+  type: string;
+  company_name: string | null;
+}
 
 interface NewTransactionDialogProps {
   defaultPaymentMethod?: PaymentMethod;
@@ -34,6 +41,19 @@ export function NewTransactionDialog({
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const queryClient = useQueryClient();
+
+  const { data: parties = [] } = useQuery({
+    queryKey: ["transaction-parties"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transaction_parties")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      return data as TransactionParty[];
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,12 +113,15 @@ export function NewTransactionDialog({
             <Label>Transaction Party</Label>
             <Select name="party" required>
               <SelectTrigger>
-                <SelectValue placeholder="Select a recipient" />
+                <SelectValue placeholder="Select a party" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="supplier1">Supplier 1</SelectItem>
-                <SelectItem value="supplier2">Supplier 2</SelectItem>
-                <SelectItem value="client1">Client 1</SelectItem>
+                {parties.map((party) => (
+                  <SelectItem key={party.id} value={party.id}>
+                    {party.name}
+                    {party.company_name && ` (${party.company_name})`}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
