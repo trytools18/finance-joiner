@@ -129,6 +129,7 @@ export type Database = {
           category: Database["public"]["Enums"]["transaction_category"]
           created_at: string
           date: string
+          description: string | null
           id: string
           party: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
@@ -142,6 +143,7 @@ export type Database = {
           category: Database["public"]["Enums"]["transaction_category"]
           created_at?: string
           date?: string
+          description?: string | null
           id?: string
           party?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
@@ -155,6 +157,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["transaction_category"]
           created_at?: string
           date?: string
+          description?: string | null
           id?: string
           party?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]

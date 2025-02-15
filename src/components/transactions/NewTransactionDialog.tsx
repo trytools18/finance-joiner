@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
 
 type TransactionCategory = "income" | "expense" | "transfer";
 type PaymentMethod = "cash" | "card" | "online";
@@ -23,6 +24,12 @@ interface TransactionParty {
   name: string;
   type: string;
   company_name: string | null;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
 }
 
 interface NewTransactionDialogProps {
@@ -55,6 +62,19 @@ export function NewTransactionDialog({
     },
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["transaction-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transaction_categories")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      return data as Category[];
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -71,6 +91,7 @@ export function NewTransactionDialog({
       payment_method: formData.get("payment_method") as PaymentMethod,
       status: "completed" as TransactionStatus,
       user_id: user.id,
+      description: formData.get("description")?.toString() || null,
     };
 
     const { error } = await supabase
@@ -100,13 +121,25 @@ export function NewTransactionDialog({
             <Label>Type</Label>
             <Select name="category" required>
               <SelectTrigger>
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="expense">Expense</SelectItem>
-                <SelectItem value="income">Income</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name} ({category.type})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea 
+              name="description" 
+              placeholder="Add a description (optional)"
+              className="resize-none"
+            />
           </div>
 
           <div className="space-y-2">
