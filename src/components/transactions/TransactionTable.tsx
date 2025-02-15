@@ -62,7 +62,7 @@ export const TransactionTable = ({
               <TableCell>{getPartyName(transaction.party)}</TableCell>
               <TableCell className="capitalize">{transaction.category}</TableCell>
               <TableCell>{formatCurrency(transaction.amount, currencyCode)}</TableCell>
-              <TableCell className="capitalize">{transaction.status}</TableCell>
+              <TableCell className="Make this colum drop down menu with 3 option default will be pending and the other to option will be complete and canceled. give it good fit background color at each option">{transaction.status}</TableCell>
               <TableCell className="capitalize">{transaction.payment_method}</TableCell>
             </TableRow>)}
         </TableBody>
