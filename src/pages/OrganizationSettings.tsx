@@ -16,6 +16,7 @@ import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { BasicSettingsFields } from "./organization-settings/BasicSettingsFields";
 import { VATRatesSection } from "./organization-settings/VATRatesSection";
 import { TransactionPartiesSection } from "./organization-settings/TransactionPartiesSection";
+import { TransactionCategoriesSection } from "./organization-settings/TransactionCategoriesSection";
 import { 
   DEFAULT_VAT_RATES, 
   formSchema, 
@@ -151,9 +152,10 @@ export default function OrganizationSettings() {
 
       <div className="container mx-auto p-6 max-w-2xl">
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="basic">Basic Settings</TabsTrigger>
             <TabsTrigger value="parties">Transaction Parties</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-6">
@@ -170,6 +172,10 @@ export default function OrganizationSettings() {
 
           <TabsContent value="parties">
             <TransactionPartiesSection />
+          </TabsContent>
+
+          <TabsContent value="categories">
+            <TransactionCategoriesSection />
           </TabsContent>
         </Tabs>
       </div>
