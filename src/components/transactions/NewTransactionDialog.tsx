@@ -56,7 +56,8 @@ export function NewTransactionDialog({
 
     const transaction = {
       date: date.toISOString(),
-      category: categoryData.type as TransactionCategory,
+      type: categoryData.type as TransactionCategory,
+      category_id: categoryData.id,
       amount: Number(formData.get("amount")),
       vat: Number(formData.get("vat")?.toString().replace("%", "")) / 100,
       party: formData.get("party")?.toString() || null,

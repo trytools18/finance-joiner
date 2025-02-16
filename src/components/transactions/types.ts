@@ -25,7 +25,8 @@ export interface NewTransactionDialogProps {
 
 export interface TransactionFormData {
   date: string;
-  category: TransactionCategory;
+  type: TransactionCategory;
+  category_id: string;
   amount: number;
   vat: number;
   party: string | null;
