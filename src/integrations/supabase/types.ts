@@ -126,7 +126,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
-          category: Database["public"]["Enums"]["transaction_category"]
+          category_id: string | null
           created_at: string
           date: string
           description: string | null
@@ -134,13 +134,14 @@ export type Database = {
           party: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           status: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_category"]
           updated_at: string
           user_id: string
           vat: number | null
         }
         Insert: {
           amount: number
-          category: Database["public"]["Enums"]["transaction_category"]
+          category_id?: string | null
           created_at?: string
           date?: string
           description?: string | null
@@ -148,13 +149,14 @@ export type Database = {
           party?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_category"]
           updated_at?: string
           user_id: string
           vat?: number | null
         }
         Update: {
           amount?: number
-          category?: Database["public"]["Enums"]["transaction_category"]
+          category_id?: string | null
           created_at?: string
           date?: string
           description?: string | null
@@ -162,11 +164,20 @@ export type Database = {
           party?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["transaction_status"]
+          type?: Database["public"]["Enums"]["transaction_category"]
           updated_at?: string
           user_id?: string
           vat?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

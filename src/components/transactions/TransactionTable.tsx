@@ -22,7 +22,7 @@ export interface Transaction {
   id: string;
   date: string;
   party: string | null;
-  category: "income" | "expense" | "transfer";
+  type: "income" | "expense" | "transfer";
   amount: number;
   status: "completed" | "pending" | "cancelled";
   payment_method: "cash" | "card" | "online";
@@ -87,7 +87,7 @@ export const TransactionTable = ({
 
   const getCategoryName = (transaction: Transaction) => {
     const category = categories.find(c => c.id === transaction.category_id);
-    return category?.name || transaction.category;
+    return category?.name || "-";
   };
 
   const getStatusStyle = (status: Transaction['status']) => {
@@ -105,8 +105,8 @@ export const TransactionTable = ({
   const formatAmount = (transaction: Transaction) => {
     const amount = Math.abs(transaction.amount);
     const formattedAmount = formatCurrency(amount, currencyCode);
-    const sign = transaction.category === 'income' ? '+' : '-';
-    const color = transaction.category === 'income' ? 'text-green-600' : 'text-red-600';
+    const sign = transaction.type === 'income' ? '+' : '-';
+    const color = transaction.type === 'income' ? 'text-green-600' : 'text-red-600';
     
     return (
       <span className={color}>
@@ -122,6 +122,7 @@ export const TransactionTable = ({
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Party</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Amount</TableHead>
             <TableHead>Status</TableHead>
@@ -133,6 +134,7 @@ export const TransactionTable = ({
             <TableRow key={transaction.id}>
               <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
               <TableCell>{getPartyName(transaction.party)}</TableCell>
+              <TableCell className="capitalize">{transaction.type}</TableCell>
               <TableCell className="capitalize">{getCategoryName(transaction)}</TableCell>
               <TableCell>{formatAmount(transaction)}</TableCell>
               <TableCell>
@@ -180,4 +182,4 @@ export const TransactionTable = ({
       </Table>
     </div>
   );
-};
+}
