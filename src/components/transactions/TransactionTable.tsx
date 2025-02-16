@@ -12,6 +12,12 @@ interface TransactionParty {
   company_name: string | null;
 }
 
+interface TransactionCategory {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+}
+
 export interface Transaction {
   id: string;
   date: string;
@@ -20,6 +26,7 @@ export interface Transaction {
   amount: number;
   status: "completed" | "pending" | "cancelled";
   payment_method: "cash" | "card" | "online";
+  category_id?: string;
 }
 
 interface TransactionTableProps {
@@ -45,6 +52,18 @@ export const TransactionTable = ({
     },
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["transaction-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transaction_categories")
+        .select("*");
+      
+      if (error) throw error;
+      return data as TransactionCategory[];
+    },
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Transaction['status'] }) => {
       const { error } = await supabase
@@ -66,6 +85,11 @@ export const TransactionTable = ({
     return party.company_name ? `${party.name} (${party.company_name})` : party.name;
   };
 
+  const getCategoryName = (transaction: Transaction) => {
+    const category = categories.find(c => c.id === transaction.category_id);
+    return category?.name || transaction.category;
+  };
+
   const getStatusStyle = (status: Transaction['status']) => {
     switch (status) {
       case 'completed':
@@ -76,6 +100,19 @@ export const TransactionTable = ({
       default:
         return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
     }
+  };
+
+  const formatAmount = (transaction: Transaction) => {
+    const amount = Math.abs(transaction.amount);
+    const formattedAmount = formatCurrency(amount, currencyCode);
+    const sign = transaction.category === 'income' ? '+' : '-';
+    const color = transaction.category === 'income' ? 'text-green-600' : 'text-red-600';
+    
+    return (
+      <span className={color}>
+        {sign} {formattedAmount}
+      </span>
+    );
   };
 
   return (
@@ -96,8 +133,8 @@ export const TransactionTable = ({
             <TableRow key={transaction.id}>
               <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
               <TableCell>{getPartyName(transaction.party)}</TableCell>
-              <TableCell className="capitalize">{transaction.category}</TableCell>
-              <TableCell>{formatCurrency(transaction.amount, currencyCode)}</TableCell>
+              <TableCell className="capitalize">{getCategoryName(transaction)}</TableCell>
+              <TableCell>{formatAmount(transaction)}</TableCell>
               <TableCell>
                 <Select
                   defaultValue={transaction.status}
