@@ -35,3 +35,20 @@ export interface TransactionFormData {
   user_id: string;
   description: string | null;
 }
+
+export interface Transaction {
+  id: string;
+  date: string;
+  party: string | null;
+  type: TransactionCategory;
+  amount: number;
+  status: TransactionStatus;
+  payment_method: PaymentMethod;
+  category_id?: string;
+}
+
+export interface Column {
+  id: string;
+  label: string;
+  render: (transaction: Transaction) => React.ReactNode;
+}
