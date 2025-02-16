@@ -1,6 +1,7 @@
 
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,18 +32,39 @@ export function TransactionFormFields({
   defaultVatRate,
   vatRates,
 }: TransactionFormFieldsProps) {
+  const [selectedType, setSelectedType] = useState<'income' | 'expense'>('expense');
+
+  const filteredCategories = categories.filter(category => category.type === selectedType);
+
   return (
     <>
       <div className="space-y-2">
         <Label>Type</Label>
+        <Select 
+          name="type" 
+          value={selectedType} 
+          onValueChange={(value: 'income' | 'expense') => setSelectedType(value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="income">Income</SelectItem>
+            <SelectItem value="expense">Expense</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Category</Label>
         <Select name="category" required>
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((category) => (
+            {filteredCategories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
-                {category.name} ({category.type})
+                {category.name}
               </SelectItem>
             ))}
           </SelectContent>
