@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { TransactionFormFields } from "./TransactionFormFields";
-import { NewTransactionDialogProps, TransactionParty, Category } from "./types";
+import { NewTransactionDialogProps, TransactionParty, Category, TransactionCategory, TransactionStatus, PaymentMethod } from "./types";
 
 export function NewTransactionDialog({ 
   defaultPaymentMethod = "online",
@@ -51,14 +51,17 @@ export function NewTransactionDialog({
     const user = (await supabase.auth.getUser()).data.user;
     if (!user) return;
 
+    const categoryData = categories.find(c => c.id === formData.get("category"));
+    if (!categoryData) return;
+
     const transaction = {
       date: date.toISOString(),
-      category: formData.get("category") as string,
+      category: categoryData.type as TransactionCategory,
       amount: Number(formData.get("amount")),
       vat: Number(formData.get("vat")?.toString().replace("%", "")) / 100,
       party: formData.get("party")?.toString() || null,
-      payment_method: formData.get("payment_method") as "cash" | "card" | "online",
-      status: "completed" as const,
+      payment_method: formData.get("payment_method") as PaymentMethod,
+      status: "completed" as TransactionStatus,
       user_id: user.id,
       description: formData.get("description")?.toString() || null,
     };
