@@ -1,6 +1,7 @@
 
 import { formatCurrency } from "@/lib/utils";
 import { Column, Transaction, TransactionParty, Category } from "../types";
+import { StatusCell } from "./StatusCell";
 
 export const createTableColumns = (
   getPartyName: (partyId: string | null) => string,
