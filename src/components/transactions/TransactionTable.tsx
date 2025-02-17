@@ -23,50 +23,32 @@ export const TransactionTable = ({
   const sensors = useSensors(useSensor(MouseSensor));
   const [columns, setColumns] = useState<Column[]>([]);
 
-  // Fetch transaction parties
+  // Fetch all transaction parties
   const { data: parties = [] } = useQuery({
     queryKey: ["transaction-parties"],
     queryFn: async () => {
-      const partyIds = [...new Set(transactions.map(t => t.party).filter(Boolean))];
-      
-      if (partyIds.length === 0) return [];
-
-      // Filter only valid UUIDs
-      const validUUIDs = partyIds.filter(id => {
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        return uuidRegex.test(id);
-      });
-
-      if (validUUIDs.length === 0) return [];
-
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
-        .in("id", validUUIDs);
+        .order("name");
       
       if (error) throw error;
       return data as TransactionParty[];
     },
-    enabled: transactions.length > 0,
   });
 
-  // Fetch categories
+  // Fetch all categories
   const { data: categories = [] } = useQuery({
     queryKey: ["transaction-categories"],
     queryFn: async () => {
-      const categoryIds = [...new Set(transactions.map(t => t.category_id).filter(Boolean))];
-      
-      if (categoryIds.length === 0) return [];
-
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*")
-        .in("id", categoryIds);
+        .order("name");
       
       if (error) throw error;
       return data as Category[];
     },
-    enabled: transactions.length > 0,
   });
 
   const updateStatusMutation = useMutation({
@@ -85,13 +67,9 @@ export const TransactionTable = ({
 
   const getPartyName = (partyId: string | null) => {
     if (!partyId) return "-";
-    // First try to find the party in the fetched parties
     const party = parties.find(p => p.id === partyId);
-    if (party) {
-      return party.company_name ? `${party.name} (${party.company_name})` : party.name;
-    }
-    // If not found in parties table, return the ID as is (for legacy data)
-    return partyId;
+    if (!party) return "-";
+    return party.company_name ? `${party.name} (${party.company_name})` : party.name;
   };
 
   const getCategoryName = (transaction: Transaction) => {
@@ -105,7 +83,7 @@ export const TransactionTable = ({
   };
 
   // Initialize columns if not yet set
-  if (columns.length === 0 || columns.length !== 6) { // Make sure we always have the correct number of columns
+  if (columns.length === 0 || columns.length !== 6) {
     setColumns(createTableColumns(
       getPartyName,
       getCategoryName,
