@@ -31,10 +31,18 @@ export const TransactionTable = ({
       
       if (partyIds.length === 0) return [];
 
+      // Filter only valid UUIDs
+      const validUUIDs = partyIds.filter(id => {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(id);
+      });
+
+      if (validUUIDs.length === 0) return [];
+
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
-        .in("id", partyIds);
+        .in("id", validUUIDs);
       
       if (error) throw error;
       return data as TransactionParty[];
@@ -77,9 +85,13 @@ export const TransactionTable = ({
 
   const getPartyName = (partyId: string | null) => {
     if (!partyId) return "-";
+    // First try to find the party in the fetched parties
     const party = parties.find(p => p.id === partyId);
-    if (!party) return "-";
-    return party.company_name ? `${party.name} (${party.company_name})` : party.name;
+    if (party) {
+      return party.company_name ? `${party.name} (${party.company_name})` : party.name;
+    }
+    // If not found in parties table, return the ID as is (for legacy data)
+    return partyId;
   };
 
   const getCategoryName = (transaction: Transaction) => {
