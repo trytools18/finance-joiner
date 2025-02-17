@@ -34,11 +34,6 @@ export const createTableColumns = (
       render: (transaction) => getPartyName(transaction.party),
     },
     {
-      id: 'type',
-      label: 'Type',
-      render: (transaction) => <span className="capitalize">{transaction.type}</span>,
-    },
-    {
       id: 'category',
       label: 'Category',
       render: (transaction) => <span className="capitalize">{getCategoryName(transaction)}</span>,
