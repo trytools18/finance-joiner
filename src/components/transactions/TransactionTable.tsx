@@ -23,28 +23,42 @@ export const TransactionTable = ({
   const sensors = useSensors(useSensor(MouseSensor));
   const [columns, setColumns] = useState<Column[]>([]);
 
+  // Fetch transaction parties
   const { data: parties = [] } = useQuery({
     queryKey: ["transaction-parties"],
     queryFn: async () => {
+      const partyIds = [...new Set(transactions.map(t => t.party).filter(Boolean))];
+      
+      if (partyIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from("transaction_parties")
-        .select("*");
+        .select("*")
+        .in("id", partyIds);
       
       if (error) throw error;
       return data as TransactionParty[];
     },
+    enabled: transactions.length > 0,
   });
 
+  // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ["transaction-categories"],
     queryFn: async () => {
+      const categoryIds = [...new Set(transactions.map(t => t.category_id).filter(Boolean))];
+      
+      if (categoryIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from("transaction_categories")
-        .select("*");
+        .select("*")
+        .in("id", categoryIds);
       
       if (error) throw error;
       return data as Category[];
     },
+    enabled: transactions.length > 0,
   });
 
   const updateStatusMutation = useMutation({
@@ -64,11 +78,12 @@ export const TransactionTable = ({
   const getPartyName = (partyId: string | null) => {
     if (!partyId) return "-";
     const party = parties.find(p => p.id === partyId);
-    if (!party) return partyId;
+    if (!party) return "-";
     return party.company_name ? `${party.name} (${party.company_name})` : party.name;
   };
 
   const getCategoryName = (transaction: Transaction) => {
+    if (!transaction.category_id) return "-";
     const category = categories.find(c => c.id === transaction.category_id);
     return category?.name || "-";
   };
@@ -78,7 +93,7 @@ export const TransactionTable = ({
   };
 
   // Initialize columns if not yet set
-  if (columns.length === 0) {
+  if (columns.length === 0 || columns.length !== 6) { // Make sure we always have the correct number of columns
     setColumns(createTableColumns(
       getPartyName,
       getCategoryName,
