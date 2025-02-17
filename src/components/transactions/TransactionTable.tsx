@@ -23,16 +23,16 @@ export const TransactionTable = ({
   const sensors = useSensors(useSensor(MouseSensor));
   const [columns, setColumns] = useState<Column[]>([]);
 
-  // Fetch all transaction parties
+  // Fetch transaction parties
   const { data: parties = [] } = useQuery({
     queryKey: ["transaction-parties"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transaction_parties")
-        .select("*")
-        .order("name");
+        .select("*");
       
       if (error) throw error;
+      console.log("Fetched parties:", data); // Debug log
       return data as TransactionParty[];
     },
   });
@@ -43,8 +43,7 @@ export const TransactionTable = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transaction_categories")
-        .select("*")
-        .order("name");
+        .select("*");
       
       if (error) throw error;
       return data as Category[];
@@ -66,10 +65,11 @@ export const TransactionTable = ({
   });
 
   const getPartyName = (partyId: string | null) => {
+    console.log("Looking for party:", partyId); // Debug log
+    console.log("Available parties:", parties); // Debug log
     if (!partyId) return "-";
     const party = parties.find(p => p.id === partyId);
-    if (!party) return "-";
-    return party.company_name ? `${party.name} (${party.company_name})` : party.name;
+    return party ? party.name : "-";
   };
 
   const getCategoryName = (transaction: Transaction) => {
