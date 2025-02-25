@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -166,35 +165,37 @@ export const TransactionTable = ({
   };
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <DndContext
-          sensors={sensors}
-          onDragEnd={handleDragEnd}
-          modifiers={[restrictToHorizontalAxis]}
-        >
-          <TableHeader>
-            <TableRow>
-              <SortableContext items={columns} strategy={horizontalListSortingStrategy}>
-                {columns.map((column) => (
-                  <SortableHeader key={column.id} column={column} />
-                ))}
-              </SortableContext>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map(transaction => (
-              <TableRow key={transaction.id}>
-                {columns.map((column) => (
-                  <TableCell key={`${transaction.id}-${column.id}`}>
-                    {column.render(transaction)}
-                  </TableCell>
-                ))}
+    <div className="rounded-md border overflow-x-auto">
+      <div className="min-w-[800px]">
+        <Table>
+          <DndContext
+            sensors={sensors}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToHorizontalAxis]}
+          >
+            <TableHeader>
+              <TableRow>
+                <SortableContext items={columns} strategy={horizontalListSortingStrategy}>
+                  {columns.map((column) => (
+                    <SortableHeader key={column.id} column={column} />
+                  ))}
+                </SortableContext>
               </TableRow>
-            ))}
-          </TableBody>
-        </DndContext>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {transactions.map(transaction => (
+                <TableRow key={transaction.id}>
+                  {columns.map((column) => (
+                    <TableCell key={`${transaction.id}-${column.id}`}>
+                      {column.render(transaction)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </DndContext>
+        </Table>
+      </div>
     </div>
   );
 };

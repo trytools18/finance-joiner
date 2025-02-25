@@ -39,6 +39,11 @@ export const createTableColumns = (
       render: (transaction) => <span className="capitalize">{getCategoryName(transaction)}</span>,
     },
     {
+      id: 'description',
+      label: 'Description',
+      render: (transaction) => <span className="max-w-xs truncate">{transaction.description || '-'}</span>,
+    },
+    {
       id: 'amount',
       label: 'Amount',
       render: formatAmount,
@@ -60,3 +65,4 @@ export const createTableColumns = (
     },
   ];
 };
+

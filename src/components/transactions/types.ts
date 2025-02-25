@@ -45,6 +45,7 @@ export interface Transaction {
   status: TransactionStatus;
   payment_method: PaymentMethod;
   category_id?: string;
+  description?: string | null;
 }
 
 export interface Column {
@@ -52,3 +53,4 @@ export interface Column {
   label: string;
   render: (transaction: Transaction) => React.ReactNode;
 }
+
