@@ -23,19 +23,29 @@ export const TransactionTable = ({
   const sensors = useSensors(useSensor(MouseSensor));
   const [columns, setColumns] = useState<Column[]>([]);
 
-  // Fetch transaction parties
-  const { data: parties = [] } = useQuery({
+  // Fetch transaction parties with error handling
+  const { data: parties = [], error: partiesError } = useQuery({
     queryKey: ["transaction-parties"],
     queryFn: async () => {
+      console.log("Fetching transaction parties..."); // Debug log
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*");
       
-      if (error) throw error;
-      console.log("Fetched parties:", data); // Debug log
+      if (error) {
+        console.error("Error fetching parties:", error); // Debug log
+        throw error;
+      }
+      
+      console.log("Successfully fetched parties:", data); // Debug log
       return data as TransactionParty[];
     },
   });
+
+  // Log any parties error
+  if (partiesError) {
+    console.error("Error in parties query:", partiesError);
+  }
 
   // Fetch all categories
   const { data: categories = [] } = useQuery({
@@ -65,11 +75,22 @@ export const TransactionTable = ({
   });
 
   const getPartyName = (partyId: string | null) => {
-    console.log("Looking for party:", partyId); // Debug log
-    console.log("Available parties:", parties); // Debug log
+    console.log("Looking for party:", partyId);
+    console.log("Available parties:", parties);
+    
     if (!partyId) return "-";
+    
+    // Try to find the party
     const party = parties.find(p => p.id === partyId);
-    return party ? party.name : "-";
+    
+    // Add more detailed logging
+    if (!party) {
+      console.log("No party found for ID:", partyId);
+      return "-";
+    }
+    
+    console.log("Found party:", party);
+    return party.company_name ? `${party.name} (${party.company_name})` : party.name;
   };
 
   const getCategoryName = (transaction: Transaction) => {
@@ -136,3 +157,4 @@ export const TransactionTable = ({
     </div>
   );
 };
+
