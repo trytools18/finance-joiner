@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Transaction, TransactionParty, Category, TransactionStatus, Column } from "./types";
 import { SortableHeader } from "./table/SortableHeader";
 import { createTableColumns } from "./table/TableColumns";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -22,43 +23,74 @@ export const TransactionTable = ({
   const queryClient = useQueryClient();
   const sensors = useSensors(useSensor(MouseSensor));
   const [columns, setColumns] = useState<Column[]>([]);
+  const { toast } = useToast();
 
   // Fetch transaction parties with error handling
   const { data: parties = [], error: partiesError } = useQuery({
     queryKey: ["transaction-parties"],
     queryFn: async () => {
-      console.log("Fetching transaction parties..."); // Debug log
+      console.log("Fetching transaction parties...");
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*");
       
       if (error) {
-        console.error("Error fetching parties:", error); // Debug log
+        console.error("Error fetching parties:", error);
+        toast({
+          title: "Error fetching parties",
+          description: error.message,
+          variant: "destructive",
+        });
         throw error;
       }
       
-      console.log("Successfully fetched parties:", data); // Debug log
+      if (!data || data.length === 0) {
+        console.log("No transaction parties found");
+      } else {
+        console.log("Successfully fetched parties:", data);
+      }
+      
       return data as TransactionParty[];
     },
   });
 
-  // Log any parties error
-  if (partiesError) {
-    console.error("Error in parties query:", partiesError);
-  }
-
   // Fetch all categories
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], error: categoriesError } = useQuery({
     queryKey: ["transaction-categories"],
     queryFn: async () => {
+      console.log("Fetching transaction categories...");
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*");
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching categories:", error);
+        toast({
+          title: "Error fetching categories",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.log("No transaction categories found");
+      } else {
+        console.log("Successfully fetched categories:", data);
+      }
+      
       return data as Category[];
     },
   });
+
+  // Log any query errors
+  if (partiesError) {
+    console.error("Error in parties query:", partiesError);
+  }
+
+  if (categoriesError) {
+    console.error("Error in categories query:", categoriesError);
+  }
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TransactionStatus }) => {
@@ -67,10 +99,21 @@ export const TransactionTable = ({
         .update({ status })
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error updating status",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      toast({
+        title: "Status updated",
+        description: "Transaction status has been updated successfully.",
+      });
     },
   });
 
@@ -80,10 +123,8 @@ export const TransactionTable = ({
     
     if (!partyId) return "-";
     
-    // Try to find the party
     const party = parties.find(p => p.id === partyId);
     
-    // Add more detailed logging
     if (!party) {
       console.log("No party found for ID:", partyId);
       return "-";
@@ -157,4 +198,3 @@ export const TransactionTable = ({
     </div>
   );
 };
-
