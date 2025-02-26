@@ -7,9 +7,22 @@ import { isWithinInterval, parseISO } from 'date-fns';
 export const useTransactionFilters = (transactions: Transaction[]) => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [transactionType, setTransactionType] = useState<TransactionCategory | 'all'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
+
+    // Filter by search term
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(transaction => {
+        return (
+          transaction.description?.toLowerCase().includes(search) ||
+          transaction.payment_method.toLowerCase().includes(search) ||
+          transaction.type.toLowerCase().includes(search)
+        );
+      });
+    }
 
     // Filter by date range
     if (dateRange?.from || dateRange?.to) {
@@ -37,13 +50,14 @@ export const useTransactionFilters = (transactions: Transaction[]) => {
     }
 
     return filtered;
-  }, [transactions, dateRange, transactionType]);
+  }, [transactions, dateRange, transactionType, searchTerm]);
 
-  const hasActiveFilters = !!(dateRange?.from || dateRange?.to || transactionType !== 'all');
+  const hasActiveFilters = !!(dateRange?.from || dateRange?.to || transactionType !== 'all' || searchTerm);
 
   const clearFilters = () => {
     setDateRange(undefined);
     setTransactionType('all');
+    setSearchTerm('');
   };
 
   return {
@@ -52,6 +66,8 @@ export const useTransactionFilters = (transactions: Transaction[]) => {
     setDateRange,
     transactionType,
     setTransactionType,
+    searchTerm,
+    setSearchTerm,
     clearFilters,
     hasActiveFilters
   };
