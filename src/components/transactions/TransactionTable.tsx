@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableRow } from "@/components/ui/table";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
@@ -78,43 +77,42 @@ export const TransactionTable = ({
     if (!sortField || !sortDirection) return transactions;
 
     return [...transactions].sort((a, b) => {
+      let valueA: string | number;
+      let valueB: string | number;
+
       if (sortField === "date") {
         return sortDirection === "asc" 
           ? new Date(a.date).getTime() - new Date(b.date).getTime()
           : new Date(b.date).getTime() - new Date(a.date).getTime();
       }
+
+      // For text-based fields, normalize strings by converting to lowercase
       if (sortField === "party") {
-        const partyA = getPartyName(a.party).toLowerCase();
-        const partyB = getPartyName(b.party).toLowerCase();
-        return sortDirection === "asc"
-          ? partyA.localeCompare(partyB)
-          : partyB.localeCompare(partyA);
-      }
-      if (sortField === "category") {
-        const categoryA = getCategoryName(a).toLowerCase();
-        const categoryB = getCategoryName(b).toLowerCase();
-        return sortDirection === "asc"
-          ? categoryA.localeCompare(categoryB)
-          : categoryB.localeCompare(categoryA);
-      }
-      if (sortField === "amount") {
+        valueA = getPartyName(a.party).toLowerCase();
+        valueB = getPartyName(b.party).toLowerCase();
+      } else if (sortField === "category") {
+        valueA = getCategoryName(a).toLowerCase();
+        valueB = getCategoryName(b).toLowerCase();
+      } else if (sortField === "description") {
+        valueA = (a.description || '').toLowerCase();
+        valueB = (b.description || '').toLowerCase();
+      } else if (sortField === "payment_method") {
+        valueA = a.payment_method.toLowerCase();
+        valueB = b.payment_method.toLowerCase();
+      } else if (sortField === "amount") {
         return sortDirection === "asc"
           ? a.amount - b.amount
           : b.amount - a.amount;
+      } else {
+        return 0;
       }
-      if (sortField === "description") {
-        const descA = (a.description || '').toLowerCase();
-        const descB = (b.description || '').toLowerCase();
-        return sortDirection === "asc"
-          ? descA.localeCompare(descB)
-          : descB.localeCompare(descA);
+
+      // Case-insensitive string comparison
+      if (sortDirection === "asc") {
+        return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+      } else {
+        return valueB < valueA ? -1 : valueB > valueA ? 1 : 0;
       }
-      if (sortField === "payment_method") {
-        return sortDirection === "asc"
-          ? a.payment_method.localeCompare(b.payment_method)
-          : b.payment_method.localeCompare(a.payment_method);
-      }
-      return 0;
     });
   };
 
