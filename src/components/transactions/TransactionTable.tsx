@@ -12,7 +12,7 @@ import { useTransactionFilters } from "./hooks/useTransactionFilters";
 import { DateRangePicker } from "./filters/DateRangePicker";
 import { TypeFilter } from "./filters/TypeFilter";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Filter, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
@@ -22,7 +22,7 @@ interface TransactionTableProps {
 }
 
 type SortDirection = "asc" | "desc" | null;
-type SortField = "date" | "party" | "amount" | null;
+type SortField = "date" | "party" | "category" | "amount" | "description" | "payment_method" | null;
 
 export const TransactionTable = ({
   transactions,
@@ -32,18 +32,6 @@ export const TransactionTable = ({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
-
-  const {
-    filteredTransactions,
-    dateRange,
-    setDateRange,
-    transactionType,
-    setTransactionType,
-    searchTerm,
-    setSearchTerm,
-    clearFilters,
-    hasActiveFilters
-  } = useTransactionFilters(transactions);
 
   const getPartyName = (partyId: string | null) => {
     if (!partyId) return "-";
@@ -56,6 +44,18 @@ export const TransactionTable = ({
     const category = categories.find(c => c.id === transaction.category_id);
     return category?.name || "-";
   };
+
+  const {
+    filteredTransactions,
+    dateRange,
+    setDateRange,
+    transactionType,
+    setTransactionType,
+    searchTerm,
+    setSearchTerm,
+    clearFilters,
+    hasActiveFilters
+  } = useTransactionFilters(transactions, getPartyName, getCategoryName);
 
   const handleStatusChange = (id: string, status: Transaction['status']) => {
     updateStatusMutation.mutate({ id, status });
@@ -90,10 +90,29 @@ export const TransactionTable = ({
           ? partyA.localeCompare(partyB)
           : partyB.localeCompare(partyA);
       }
+      if (sortField === "category") {
+        const categoryA = getCategoryName(a).toLowerCase();
+        const categoryB = getCategoryName(b).toLowerCase();
+        return sortDirection === "asc"
+          ? categoryA.localeCompare(categoryB)
+          : categoryB.localeCompare(categoryA);
+      }
       if (sortField === "amount") {
         return sortDirection === "asc"
           ? a.amount - b.amount
           : b.amount - a.amount;
+      }
+      if (sortField === "description") {
+        const descA = (a.description || '').toLowerCase();
+        const descB = (b.description || '').toLowerCase();
+        return sortDirection === "asc"
+          ? descA.localeCompare(descB)
+          : descB.localeCompare(descA);
+      }
+      if (sortField === "payment_method") {
+        return sortDirection === "asc"
+          ? a.payment_method.localeCompare(b.payment_method)
+          : b.payment_method.localeCompare(a.payment_method);
       }
       return 0;
     });
@@ -108,7 +127,7 @@ export const TransactionTable = ({
 
   const columns = unsortedColumns.map(column => ({
     ...column,
-    sortable: ["date", "party", "amount"].includes(column.id),
+    sortable: ["date", "party", "category", "amount", "description", "payment_method"].includes(column.id),
     sortDirection: sortField === column.id ? sortDirection : null,
     onSort: () => handleSort(column.id as SortField)
   }));

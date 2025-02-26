@@ -4,7 +4,11 @@ import { Transaction, TransactionCategory } from '../types';
 import { DateRange } from 'react-day-picker';
 import { isWithinInterval, parseISO } from 'date-fns';
 
-export const useTransactionFilters = (transactions: Transaction[]) => {
+export const useTransactionFilters = (
+  transactions: Transaction[],
+  getPartyName: (partyId: string | null) => string,
+  getCategoryName: (transaction: Transaction) => string
+) => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [transactionType, setTransactionType] = useState<TransactionCategory | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,10 +20,17 @@ export const useTransactionFilters = (transactions: Transaction[]) => {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(transaction => {
+        const partyName = getPartyName(transaction.party).toLowerCase();
+        const categoryName = getCategoryName(transaction).toLowerCase();
+        const amount = Math.abs(transaction.amount).toString();
+        
         return (
           transaction.description?.toLowerCase().includes(search) ||
           transaction.payment_method.toLowerCase().includes(search) ||
-          transaction.type.toLowerCase().includes(search)
+          transaction.type.toLowerCase().includes(search) ||
+          partyName.includes(search) ||
+          categoryName.includes(search) ||
+          amount.includes(search)
         );
       });
     }
@@ -50,7 +61,7 @@ export const useTransactionFilters = (transactions: Transaction[]) => {
     }
 
     return filtered;
-  }, [transactions, dateRange, transactionType, searchTerm]);
+  }, [transactions, dateRange, transactionType, searchTerm, getPartyName, getCategoryName]);
 
   const hasActiveFilters = !!(dateRange?.from || dateRange?.to || transactionType !== 'all' || searchTerm);
 
