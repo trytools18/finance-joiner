@@ -69,7 +69,8 @@ export const TransactionTable = ({
       }
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      // For dates, we want newest first by default (desc)
+      setSortDirection(field === "date" ? "desc" : "asc");
     }
   };
 
@@ -77,14 +78,14 @@ export const TransactionTable = ({
     if (!sortField || !sortDirection) return transactions;
 
     return [...transactions].sort((a, b) => {
+      if (sortField === "date") {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+      }
+
       let valueA: string | number;
       let valueB: string | number;
-
-      if (sortField === "date") {
-        return sortDirection === "asc" 
-          ? new Date(a.date).getTime() - new Date(b.date).getTime()
-          : new Date(b.date).getTime() - new Date(a.date).getTime();
-      }
 
       // For text-based fields, normalize strings by converting to lowercase
       if (sortField === "party") {
@@ -100,19 +101,15 @@ export const TransactionTable = ({
         valueA = a.payment_method.toLowerCase();
         valueB = b.payment_method.toLowerCase();
       } else if (sortField === "amount") {
-        return sortDirection === "asc"
-          ? a.amount - b.amount
-          : b.amount - a.amount;
+        return sortDirection === "asc" ? a.amount - b.amount : b.amount - a.amount;
       } else {
         return 0;
       }
 
       // Case-insensitive string comparison
-      if (sortDirection === "asc") {
-        return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
-      } else {
-        return valueB < valueA ? -1 : valueB > valueA ? 1 : 0;
-      }
+      return sortDirection === "asc" 
+        ? valueA < valueB ? -1 : valueA > valueB ? 1 : 0
+        : valueB < valueA ? -1 : valueB > valueA ? 1 : 0;
     });
   };
 
