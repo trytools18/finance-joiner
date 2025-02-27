@@ -2,15 +2,18 @@
 import { formatCurrency } from "@/lib/utils";
 import { Column, Transaction } from "../types";
 import { StatusCell } from "./StatusCell";
+import { TransactionDetailsDialog } from "../TransactionDetailsDialog";
+import { useState } from "react";
 
 export const createTableColumns = (
   getPartyName: (partyId: string | null) => string,
   getCategoryName: (transaction: Transaction) => string,
   onStatusChange: (id: string, status: Transaction['status']) => void,
+  onVatClearableChange: (id: string, vatClearable: boolean) => void,
   currencyCode: "USD" | "EUR" | "GBP"
 ): Column[] => {
   const formatAmount = (transaction: Transaction) => {
-    const amount = Math.abs(transaction.amount);
+    const amount = Math.abs(transaction.total_amount || transaction.amount);
     const formattedAmount = formatCurrency(amount, currencyCode);
     const sign = transaction.type === 'income' ? '+' : '-';
     const color = transaction.type === 'income' ? 'text-green-600' : 'text-red-600';
@@ -65,3 +68,4 @@ export const createTableColumns = (
     },
   ];
 };
+

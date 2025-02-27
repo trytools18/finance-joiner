@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -128,9 +129,20 @@ export const TransactionTable = ({
   }));
 
   const sortedTransactions = sortTransactions(filteredTransactions);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  const handleRowClick = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+  };
 
   return (
     <div className="space-y-4">
+      <TransactionDetailsDialog
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        currencyCode={currencyCode}
+      />
+
       <div className="flex items-center justify-between">
         <Button 
           variant="outline" 
@@ -190,7 +202,11 @@ export const TransactionTable = ({
                   </SortableContext>
                 </TableRow>
               </TableHeader>
-              <TableContent transactions={sortedTransactions} columns={columns} />
+              <TableContent 
+                transactions={sortedTransactions} 
+                columns={columns}
+                onRowClick={handleRowClick}
+              />
             </DndContext>
           </Table>
         </div>
