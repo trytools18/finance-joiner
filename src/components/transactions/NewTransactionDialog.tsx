@@ -54,17 +54,27 @@ export function NewTransactionDialog({
     const categoryData = categories.find(c => c.id === formData.get("category"));
     if (!categoryData) return;
 
+    const transactionType = categoryData.type as TransactionCategory;
+    const amount = Number(formData.get("amount"));
+    const vatRate = Number(formData.get("vat"));
+    const vatClearable = transactionType === 'expense' ? formData.get("vat_clearable") === 'on' : false;
+    const vatAmount = amount * vatRate;
+
     const transaction = {
       date: date.toISOString(),
-      type: categoryData.type as TransactionCategory,
+      type: transactionType,
       category_id: categoryData.id,
-      amount: Number(formData.get("amount")),
-      vat: Number(formData.get("vat")?.toString().replace("%", "")) / 100,
+      amount: amount,
+      vat: vatRate,
+      vat_amount: vatAmount,
+      vat_clearable: vatClearable,
       party: formData.get("party")?.toString() || null,
       payment_method: formData.get("payment_method") as PaymentMethod,
       status: "completed" as TransactionStatus,
       user_id: user.id,
       description: formData.get("description")?.toString() || null,
+      // For expense transactions with non-clearable VAT, the total is amount + VAT
+      total_amount: transactionType === 'expense' && !vatClearable ? amount + vatAmount : amount
     };
 
     const { error } = await supabase

@@ -1,7 +1,7 @@
 
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,8 +33,37 @@ export function TransactionFormFields({
   vatRates,
 }: TransactionFormFieldsProps) {
   const [selectedType, setSelectedType] = useState<'income' | 'expense'>('expense');
+  const [amount, setAmount] = useState<string>('');
+  const [vatRate, setVatRate] = useState<string>(defaultVatRate.toString());
+  const [isVatClearable, setIsVatClearable] = useState<boolean>(true);
+  const [totalAmount, setTotalAmount] = useState<string>('');
 
   const filteredCategories = categories.filter(category => category.type === selectedType);
+
+  // Calculate total amount whenever amount, vatRate, or isVatClearable changes
+  useEffect(() => {
+    if (!amount) {
+      setTotalAmount('');
+      return;
+    }
+
+    const amountValue = parseFloat(amount);
+    const vatRateValue = parseFloat(vatRate);
+    
+    if (isNaN(amountValue) || isNaN(vatRateValue)) {
+      setTotalAmount('');
+      return;
+    }
+
+    const vatAmount = amountValue * vatRateValue;
+    
+    // For expense transactions with non-clearable VAT, add VAT to the total
+    if (selectedType === 'expense' && !isVatClearable) {
+      setTotalAmount((amountValue + vatAmount).toFixed(2));
+    } else {
+      setTotalAmount(amountValue.toFixed(2));
+    }
+  }, [amount, vatRate, isVatClearable, selectedType]);
 
   return (
     <>
@@ -98,13 +127,25 @@ export function TransactionFormFields({
       </div>
 
       <div className="space-y-2">
-        <Label>Amount</Label>
-        <Input type="number" step="0.01" name="amount" required />
+        <Label>Amount (net)</Label>
+        <Input 
+          type="number" 
+          step="0.01" 
+          name="amount" 
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)} 
+          required 
+        />
       </div>
 
       <div className="space-y-2">
         <Label>VAT Rate</Label>
-        <Select name="vat" defaultValue={defaultVatRate.toString()}>
+        <Select 
+          name="vat" 
+          value={vatRate}
+          onValueChange={setVatRate}
+          defaultValue={defaultVatRate.toString()}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select VAT rate" />
           </SelectTrigger>
@@ -118,10 +159,44 @@ export function TransactionFormFields({
         </Select>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox name="vat_clearable" id="vat_clearable" />
-        <Label htmlFor="vat_clearable">VAT clearable with income VAT</Label>
-      </div>
+      {selectedType === 'expense' && (
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            name="vat_clearable" 
+            id="vat_clearable"
+            checked={isVatClearable}
+            onCheckedChange={(checked) => setIsVatClearable(checked as boolean)}
+          />
+          <Label htmlFor="vat_clearable">VAT clearable with income VAT</Label>
+        </div>
+      )}
+
+      {amount && vatRate && (
+        <div className="p-3 border rounded-md bg-muted/50">
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>Net Amount:</div>
+            <div className="text-right font-medium">{parseFloat(amount).toFixed(2)}</div>
+            
+            <div>VAT ({(parseFloat(vatRate) * 100).toFixed(0)}%):</div>
+            <div className="text-right font-medium">
+              {(parseFloat(amount) * parseFloat(vatRate)).toFixed(2)}
+            </div>
+            
+            <div className="font-semibold">Total:</div>
+            <div className="text-right font-semibold">{totalAmount}</div>
+            
+            {selectedType === 'expense' && (
+              <>
+                <div colSpan={2} className="col-span-2 text-xs text-muted-foreground pt-1">
+                  {isVatClearable 
+                    ? "VAT will be recorded for tax clearance" 
+                    : "VAT is included in the total amount as a cost"}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label>Date</Label>
@@ -162,6 +237,12 @@ export function TransactionFormFields({
           </SelectContent>
         </Select>
       </div>
+
+      <input 
+        type="hidden" 
+        name="total_amount" 
+        value={totalAmount || amount} 
+      />
     </>
   );
 }

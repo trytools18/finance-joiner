@@ -1,5 +1,4 @@
-
-import { BarChart3, PieChart, TrendingUp, Wallet } from "lucide-react";
+import { BarChart3, PieChart, TrendingUp, Wallet, CreditCard } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
 import { ChartContainer } from "@/components/ui/chart";
@@ -119,6 +118,25 @@ const Index = () => {
 
   const balance = totalIncome - totalExpenses;
 
+  // Calculate VAT statistics
+  const vatReceived = transactions
+    .filter((t) => t.type === "income")
+    .reduce((sum, t) => {
+      const amount = Number(t.amount);
+      const vatRate = Number(t.vat || 0);
+      return sum + (amount * vatRate);
+    }, 0);
+
+  const vatPaid = transactions
+    .filter((t) => t.type === "expense" && t.vat_clearable === true)
+    .reduce((sum, t) => {
+      const amount = Number(t.amount);
+      const vatRate = Number(t.vat || 0);
+      return sum + (amount * vatRate);
+    }, 0);
+
+  const vatBalance = vatReceived - vatPaid;
+
   const formatAmount = (amount: number) => {
     return formatCurrency(amount, settings?.default_currency || 'USD');
   };
@@ -157,6 +175,28 @@ const Index = () => {
             value={formatAmount(totalExpenses)}
             icon={BarChart3}
             trend={{ value: 8.2, isPositive: false }}
+          />
+        </div>
+
+        {/* VAT Statistics */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard
+            title="VAT Received"
+            value={formatAmount(vatReceived)}
+            icon={CreditCard}
+            description="Total VAT collected from sales"
+          />
+          <StatCard
+            title="VAT Paid"
+            value={formatAmount(vatPaid)}
+            icon={CreditCard}
+            description="Total clearable VAT paid on purchases"
+          />
+          <StatCard
+            title="VAT Balance"
+            value={formatAmount(vatBalance)}
+            icon={CreditCard}
+            description="Difference between VAT received and paid"
           />
         </div>
 
