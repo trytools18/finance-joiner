@@ -186,13 +186,11 @@ export function TransactionFormFields({
             <div className="text-right font-semibold">{totalAmount}</div>
             
             {selectedType === 'expense' && (
-              <>
-                <div colSpan={2} className="col-span-2 text-xs text-muted-foreground pt-1">
-                  {isVatClearable 
-                    ? "VAT will be recorded for tax clearance" 
-                    : "VAT is included in the total amount as a cost"}
-                </div>
-              </>
+              <div className="col-span-2 text-xs text-muted-foreground pt-1">
+                {isVatClearable 
+                  ? "VAT will be recorded for tax clearance" 
+                  : "VAT is included in the total amount as a cost"}
+              </div>
             )}
           </div>
         </div>

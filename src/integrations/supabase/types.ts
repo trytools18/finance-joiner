@@ -134,10 +134,13 @@ export type Database = {
           party: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           status: Database["public"]["Enums"]["transaction_status"]
+          total_amount: number | null
           type: Database["public"]["Enums"]["transaction_category"]
           updated_at: string
           user_id: string
           vat: number | null
+          vat_amount: number | null
+          vat_clearable: boolean | null
         }
         Insert: {
           amount: number
@@ -149,10 +152,13 @@ export type Database = {
           party?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["transaction_status"]
+          total_amount?: number | null
           type: Database["public"]["Enums"]["transaction_category"]
           updated_at?: string
           user_id: string
           vat?: number | null
+          vat_amount?: number | null
+          vat_clearable?: boolean | null
         }
         Update: {
           amount?: number
@@ -164,10 +170,13 @@ export type Database = {
           party?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["transaction_status"]
+          total_amount?: number | null
           type?: Database["public"]["Enums"]["transaction_category"]
           updated_at?: string
           user_id?: string
           vat?: number | null
+          vat_amount?: number | null
+          vat_clearable?: boolean | null
         }
         Relationships: [
           {

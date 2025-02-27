@@ -118,22 +118,14 @@ const Index = () => {
 
   const balance = totalIncome - totalExpenses;
 
-  // Calculate VAT statistics
+  // Calculate VAT statistics using the new vat_amount field
   const vatReceived = transactions
     .filter((t) => t.type === "income")
-    .reduce((sum, t) => {
-      const amount = Number(t.amount);
-      const vatRate = Number(t.vat || 0);
-      return sum + (amount * vatRate);
-    }, 0);
+    .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
 
   const vatPaid = transactions
     .filter((t) => t.type === "expense" && t.vat_clearable === true)
-    .reduce((sum, t) => {
-      const amount = Number(t.amount);
-      const vatRate = Number(t.vat || 0);
-      return sum + (amount * vatRate);
-    }, 0);
+    .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
 
   const vatBalance = vatReceived - vatPaid;
 

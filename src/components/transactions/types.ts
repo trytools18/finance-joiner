@@ -29,6 +29,9 @@ export interface TransactionFormData {
   category_id: string;
   amount: number;
   vat: number;
+  vat_amount: number;
+  vat_clearable: boolean;
+  total_amount: number;
   party: string | null;
   payment_method: PaymentMethod;
   status: TransactionStatus;
@@ -42,6 +45,10 @@ export interface Transaction {
   party: string | null;
   type: TransactionCategory;
   amount: number;
+  vat?: number | null;
+  vat_amount?: number;
+  vat_clearable?: boolean;
+  total_amount?: number;
   status: TransactionStatus;
   payment_method: PaymentMethod;
   category_id?: string;
@@ -53,4 +60,3 @@ export interface Column {
   label: string;
   render: (transaction: Transaction) => React.ReactNode;
 }
-
