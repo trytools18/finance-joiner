@@ -12,8 +12,7 @@ import { Transaction } from "./types";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useTransactionData } from "./hooks/useTransactionData";
 import { toast } from "sonner";
 
 interface TransactionDetailsDialogProps {
@@ -29,32 +28,23 @@ export function TransactionDetailsDialog({
 }: TransactionDetailsDialogProps) {
   const [description, setDescription] = useState(transaction?.description || "");
   const [isVatClearable, setIsVatClearable] = useState(transaction?.vat_clearable || false);
-  const [isSaving, setIsSaving] = useState(false);
-  const queryClient = useQueryClient();
+  const { updateVATSettingsMutation } = useTransactionData();
 
   const handleSave = async () => {
     if (!transaction) return;
     
-    setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .update({ 
-          description,
-          vat_clearable: isVatClearable
-        })
-        .eq('id', transaction.id);
-
-      if (error) throw error;
-
+      await updateVATSettingsMutation.mutateAsync({
+        id: transaction.id,
+        vat_clearable: isVatClearable,
+        description
+      });
+      
       toast.success("Transaction updated successfully");
-      // No need to invalidate the query as we're using real-time updates
       onClose();
     } catch (error) {
       console.error('Error updating transaction:', error);
       toast.error("Failed to update transaction");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -118,12 +108,11 @@ export function TransactionDetailsDialog({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
+          <Button onClick={handleSave} disabled={updateVATSettingsMutation.isPending}>
+            {updateVATSettingsMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-

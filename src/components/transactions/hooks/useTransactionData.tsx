@@ -89,11 +89,49 @@ export const useTransactionData = () => {
     },
   });
 
+  const updateVATSettingsMutation = useMutation({
+    mutationFn: async ({ 
+      id, 
+      vat_clearable, 
+      description 
+    }: { 
+      id: string; 
+      vat_clearable: boolean;
+      description?: string | null;
+    }) => {
+      const { error } = await supabase
+        .from("transactions")
+        .update({ 
+          vat_clearable, 
+          description 
+        })
+        .eq("id", id);
+
+      if (error) {
+        toast({
+          title: "Error updating VAT settings",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["vat-summary"] });
+      toast({
+        title: "VAT settings updated",
+        description: "Transaction VAT settings have been updated successfully.",
+      });
+    },
+  });
+
   return {
     parties,
     categories,
     partiesError,
     categoriesError,
     updateStatusMutation,
+    updateVATSettingsMutation,
   };
 };

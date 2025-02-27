@@ -60,3 +60,9 @@ export interface Column {
   label: string;
   render: (transaction: Transaction) => React.ReactNode;
 }
+
+export interface VATUpdateInput {
+  id: string;
+  vat_clearable: boolean;
+  description?: string | null;
+}

@@ -1,3 +1,4 @@
+
 import { Table, TableHeader, TableRow } from "@/components/ui/table";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
@@ -15,6 +16,7 @@ import { ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
+import { VATTracker } from "./VATTracker";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -143,6 +145,8 @@ export const TransactionTable = ({
         currencyCode={currencyCode}
       />
 
+      <VATTracker currencyCode={currencyCode} className="mb-6" />
+
       <div className="flex items-center justify-between">
         <Button 
           variant="outline" 
@@ -213,4 +217,4 @@ export const TransactionTable = ({
       </div>
     </div>
   );
-};
+}
