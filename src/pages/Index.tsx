@@ -1,3 +1,4 @@
+
 import { BarChart3, PieChart, TrendingUp, Wallet, CreditCard } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
@@ -13,6 +14,8 @@ import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
+import { Transaction } from "@/components/transactions/types";
+import { useEffect, useMemo, useState } from "react";
 import type { OrganizationSettings } from "./organization-settings/types";
 
 const features = [
@@ -76,6 +79,7 @@ const DecorativeChart = ({ className }: { className?: string }) => (
 
 const Index = () => {
   const { user } = useAuth();
+  const [realtimeTransactions, setRealtimeTransactions] = useState<Transaction[]>([]);
 
   const { data: settings } = useQuery({
     queryKey: ["organization-settings", user?.id],
@@ -103,31 +107,89 @@ const Index = () => {
         .order("date", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as Transaction[];
     },
     enabled: !!user,
   });
 
-  const totalIncome = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  // Set up real-time subscription for transactions
+  useEffect(() => {
+    if (!user) return;
 
-  const totalExpenses = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+    const channel = supabase
+      .channel('transaction-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        },
+        (payload) => {
+          console.log('Real-time transaction update:', payload);
+          
+          // Update local state based on the change
+          setRealtimeTransactions(currentTransactions => {
+            const updatedTransactions = [...(currentTransactions.length ? currentTransactions : transactions)];
+            
+            if (payload.eventType === 'INSERT') {
+              return [...updatedTransactions, payload.new as Transaction];
+            } else if (payload.eventType === 'DELETE') {
+              return updatedTransactions.filter(t => t.id !== payload.old.id);
+            } else if (payload.eventType === 'UPDATE') {
+              return updatedTransactions.map(t => 
+                t.id === payload.new.id ? payload.new as Transaction : t
+              );
+            }
+            return updatedTransactions;
+          });
+        }
+      )
+      .subscribe();
 
-  const balance = totalIncome - totalExpenses;
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, transactions]);
 
-  // Calculate VAT statistics using the new vat_amount field
-  const vatReceived = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
+  // Use the real-time transactions if available, otherwise use the query data
+  const currentTransactions = realtimeTransactions.length ? realtimeTransactions : transactions;
 
-  const vatPaid = transactions
-    .filter((t) => t.type === "expense" && t.vat_clearable === true)
-    .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
+  // Memoized statistics calculations
+  const stats = useMemo(() => {
+    const completedTransactions = currentTransactions.filter(t => t.status === 'completed');
 
-  const vatBalance = vatReceived - vatPaid;
+    const totalIncome = completedTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const totalExpenses = completedTransactions
+      .filter(t => t.type === "expense")
+      .reduce((sum, t) => {
+        const netAmount = Number(t.amount);
+        // Include VAT in expenses only if it's not clearable
+        const vatAmount = t.vat_clearable ? 0 : Number(t.vat_amount || 0);
+        return sum + netAmount + vatAmount;
+      }, 0);
+
+    // Calculate VAT statistics
+    const vatReceived = completedTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
+
+    const vatPaid = completedTransactions
+      .filter(t => t.type === "expense" && t.vat_clearable === true)
+      .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
+
+    return {
+      balance: totalIncome - totalExpenses,
+      income: totalIncome,
+      expenses: totalExpenses,
+      vatReceived,
+      vatPaid,
+      vatBalance: vatReceived - vatPaid
+    };
+  }, [currentTransactions]);
 
   const formatAmount = (amount: number) => {
     return formatCurrency(amount, settings?.default_currency || 'USD');
@@ -152,20 +214,22 @@ const Index = () => {
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard
             title="Balance"
-            value={formatAmount(balance)}
+            value={formatAmount(stats.balance)}
             icon={Wallet}
-            description="Current balance"
+            description="Current balance (completed transactions)"
           />
           <StatCard
             title="Income"
-            value={formatAmount(totalIncome)}
+            value={formatAmount(stats.income)}
             icon={TrendingUp}
+            description="Total income from completed transactions"
             trend={{ value: 12.5, isPositive: true }}
           />
           <StatCard
             title="Expenses"
-            value={formatAmount(totalExpenses)}
+            value={formatAmount(stats.expenses)}
             icon={BarChart3}
+            description="Total expenses (incl. non-clearable VAT) from completed transactions"
             trend={{ value: 8.2, isPositive: false }}
           />
         </div>
@@ -174,21 +238,21 @@ const Index = () => {
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard
             title="VAT Received"
-            value={formatAmount(vatReceived)}
+            value={formatAmount(stats.vatReceived)}
             icon={CreditCard}
-            description="Total VAT collected from sales"
+            description="Total VAT collected from completed sales"
           />
           <StatCard
             title="VAT Paid"
-            value={formatAmount(vatPaid)}
+            value={formatAmount(stats.vatPaid)}
             icon={CreditCard}
-            description="Total clearable VAT paid on purchases"
+            description="Total clearable VAT paid on completed purchases"
           />
           <StatCard
             title="VAT Balance"
-            value={formatAmount(vatBalance)}
+            value={formatAmount(stats.vatBalance)}
             icon={CreditCard}
-            description="Difference between VAT received and paid"
+            description="Difference between VAT received and paid (completed transactions)"
           />
         </div>
 
@@ -200,7 +264,7 @@ const Index = () => {
             </Button>
           </div>
           <TransactionTable 
-            transactions={transactions} 
+            transactions={currentTransactions} 
             currencyCode={settings?.default_currency}
           />
         </div>
@@ -309,3 +373,4 @@ const Index = () => {
 };
 
 export default Index;
+

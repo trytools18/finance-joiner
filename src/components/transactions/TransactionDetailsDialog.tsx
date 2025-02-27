@@ -48,7 +48,7 @@ export function TransactionDetailsDialog({
       if (error) throw error;
 
       toast.success("Transaction updated successfully");
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      // No need to invalidate the query as we're using real-time updates
       onClose();
     } catch (error) {
       console.error('Error updating transaction:', error);
@@ -126,3 +126,4 @@ export function TransactionDetailsDialog({
     </Dialog>
   );
 }
+
