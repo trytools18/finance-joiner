@@ -9,6 +9,7 @@ interface UseColumnDragAndDropProps {
   getPartyName: (partyId: string | null) => string;
   getCategoryName: (transaction: any) => string;
   handleStatusChange: (id: string, status: any) => void;
+  handleVatClearableChange?: (id: string, vatClearable: boolean) => void;
   currencyCode: "USD" | "EUR" | "GBP";
 }
 
@@ -16,6 +17,7 @@ export const useColumnDragAndDrop = ({
   getPartyName,
   getCategoryName,
   handleStatusChange,
+  handleVatClearableChange = () => {}, // Default noop function if not provided
   currencyCode
 }: UseColumnDragAndDropProps) => {
   const sensors = useSensors(useSensor(MouseSensor));
@@ -27,6 +29,7 @@ export const useColumnDragAndDrop = ({
       getPartyName,
       getCategoryName,
       handleStatusChange,
+      handleVatClearableChange,
       currencyCode
     ));
   }
