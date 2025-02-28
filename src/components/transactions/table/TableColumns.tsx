@@ -16,17 +16,13 @@ export const createTableColumns = (
     // Debug the transaction object to see the actual values
     console.log('Transaction in formatAmount:', transaction);
     
-    // Calculate the total amount correctly
+    // Calculate the total amount correctly - always include VAT regardless of what's in total_amount
     const netAmount = Math.abs(transaction.amount || 0);
     const vatAmount = Math.abs(transaction.vat_amount || 0);
     
-    // If total_amount is explicitly provided, use it, otherwise calculate
-    let totalAmount;
-    if (transaction.total_amount !== undefined && transaction.total_amount !== null) {
-      totalAmount = Math.abs(transaction.total_amount);
-    } else {
-      totalAmount = netAmount + vatAmount;
-    }
+    // Always calculate the total as net + VAT, ignoring the stored total_amount
+    // This ensures VAT is always included in the displayed amount
+    const totalAmount = netAmount + vatAmount;
     
     console.log(`Transaction ${transaction.id}: Net: ${netAmount}, VAT: ${vatAmount}, Total: ${totalAmount}`);
     
