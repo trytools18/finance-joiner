@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -26,9 +26,17 @@ export function TransactionDetailsDialog({
   onClose,
   currencyCode
 }: TransactionDetailsDialogProps) {
-  const [description, setDescription] = useState(transaction?.description || "");
-  const [isVatClearable, setIsVatClearable] = useState(transaction?.vat_clearable || false);
+  const [description, setDescription] = useState<string>("");
+  const [isVatClearable, setIsVatClearable] = useState<boolean>(false);
   const { updateVATSettingsMutation } = useTransactionData();
+
+  // Update state when transaction changes
+  useEffect(() => {
+    if (transaction) {
+      setDescription(transaction.description || "");
+      setIsVatClearable(transaction.vat_clearable || false);
+    }
+  }, [transaction]);
 
   const handleSave = async () => {
     if (!transaction) return;
@@ -53,7 +61,7 @@ export function TransactionDetailsDialog({
   const formatAmount = (amount: number) => formatCurrency(amount, currencyCode);
   const netAmount = transaction.amount;
   const vatAmount = transaction.vat_amount || 0;
-  const totalAmount = transaction.total_amount || netAmount;
+  const totalAmount = transaction.total_amount || (netAmount + vatAmount);
 
   return (
     <Dialog open={!!transaction} onOpenChange={() => onClose()}>
@@ -99,7 +107,7 @@ export function TransactionDetailsDialog({
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a description..."
+              placeholder="No description added"
               className="resize-none"
             />
           </div>

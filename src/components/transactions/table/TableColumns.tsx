@@ -13,7 +13,11 @@ export const createTableColumns = (
   currencyCode: "USD" | "EUR" | "GBP"
 ): Column[] => {
   const formatAmount = (transaction: Transaction) => {
-    const amount = Math.abs(transaction.total_amount || transaction.amount);
+    // Use total_amount if available, otherwise calculate it from amount and vat_amount
+    const amount = transaction.total_amount !== undefined && transaction.total_amount !== null
+      ? Math.abs(transaction.total_amount)
+      : Math.abs(transaction.amount + (transaction.vat_amount || 0));
+    
     const formattedAmount = formatCurrency(amount, currencyCode);
     const sign = transaction.type === 'income' ? '+' : '-';
     const color = transaction.type === 'income' ? 'text-green-600' : 'text-red-600';
@@ -44,7 +48,11 @@ export const createTableColumns = (
     {
       id: 'description',
       label: 'Description',
-      render: (transaction) => <span className="max-w-xs truncate">{transaction.description || '-'}</span>,
+      render: (transaction) => (
+        <span className="max-w-xs truncate">
+          {transaction.description || '-'}
+        </span>
+      ),
     },
     {
       id: 'amount',
@@ -68,4 +76,3 @@ export const createTableColumns = (
     },
   ];
 };
-
