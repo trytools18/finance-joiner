@@ -213,12 +213,6 @@ const Index = () => {
         
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard
-            title="Balance"
-            value={formatAmount(stats.balance)}
-            icon={Wallet}
-            description="Current balance (completed transactions)"
-          />
-          <StatCard
             title="Income"
             value={formatAmount(stats.income)}
             icon={TrendingUp}
@@ -231,6 +225,12 @@ const Index = () => {
             icon={BarChart3}
             description="Total expenses (incl. non-clearable VAT) from completed transactions"
             trend={{ value: 8.2, isPositive: false }}
+          />
+          <StatCard
+            title="Balance"
+            value={formatAmount(stats.balance)}
+            icon={Wallet}
+            description="Current balance (completed transactions)"
           />
         </div>
 
@@ -373,4 +373,3 @@ const Index = () => {
 };
 
 export default Index;
-
