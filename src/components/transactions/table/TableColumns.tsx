@@ -13,12 +13,24 @@ export const createTableColumns = (
   currencyCode: "USD" | "EUR" | "GBP"
 ): Column[] => {
   const formatAmount = (transaction: Transaction) => {
-    // Use total_amount if available, otherwise calculate it from amount and vat_amount
-    const amount = transaction.total_amount !== undefined && transaction.total_amount !== null
-      ? Math.abs(transaction.total_amount)
-      : Math.abs(transaction.amount + (transaction.vat_amount || 0));
+    // Debug the transaction object to see the actual values
+    console.log('Transaction in formatAmount:', transaction);
     
-    const formattedAmount = formatCurrency(amount, currencyCode);
+    // Calculate the total amount correctly
+    const netAmount = Math.abs(transaction.amount || 0);
+    const vatAmount = Math.abs(transaction.vat_amount || 0);
+    
+    // If total_amount is explicitly provided, use it, otherwise calculate
+    let totalAmount;
+    if (transaction.total_amount !== undefined && transaction.total_amount !== null) {
+      totalAmount = Math.abs(transaction.total_amount);
+    } else {
+      totalAmount = netAmount + vatAmount;
+    }
+    
+    console.log(`Transaction ${transaction.id}: Net: ${netAmount}, VAT: ${vatAmount}, Total: ${totalAmount}`);
+    
+    const formattedAmount = formatCurrency(totalAmount, currencyCode);
     const sign = transaction.type === 'income' ? '+' : '-';
     const color = transaction.type === 'income' ? 'text-green-600' : 'text-red-600';
     
