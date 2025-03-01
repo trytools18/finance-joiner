@@ -55,16 +55,20 @@ export function NewTransactionDialog({
     if (!categoryData) return;
 
     const transactionType = categoryData.type as TransactionCategory;
+    // Get net amount from hidden field
     const amount = Number(formData.get("amount"));
+    const totalAmount = Number(formData.get("total_amount"));
     const vatRate = Number(formData.get("vat"));
     const vatClearable = transactionType === 'expense' ? formData.get("vat_clearable") === 'on' : false;
+    
+    // Calculate VAT amount based on net amount
     const vatAmount = amount * vatRate;
 
     const transaction = {
       date: date.toISOString(),
       type: transactionType,
       category_id: categoryData.id,
-      amount: amount,
+      amount: amount, // Net amount
       vat: vatRate,
       vat_amount: vatAmount,
       vat_clearable: vatClearable,
@@ -73,8 +77,8 @@ export function NewTransactionDialog({
       status: "completed" as TransactionStatus,
       user_id: user.id,
       description: formData.get("description")?.toString() || null,
-      // For expense transactions with non-clearable VAT, the total is amount + VAT
-      total_amount: transactionType === 'expense' && !vatClearable ? amount + vatAmount : amount
+      // Use the total amount from the form
+      total_amount: totalAmount
     };
 
     const { error } = await supabase

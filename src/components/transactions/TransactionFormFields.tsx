@@ -33,37 +33,38 @@ export function TransactionFormFields({
   vatRates,
 }: TransactionFormFieldsProps) {
   const [selectedType, setSelectedType] = useState<'income' | 'expense'>('expense');
-  const [amount, setAmount] = useState<string>('');
+  const [totalAmount, setTotalAmount] = useState<string>('');
   const [vatRate, setVatRate] = useState<string>(defaultVatRate.toString());
   const [isVatClearable, setIsVatClearable] = useState<boolean>(true);
-  const [totalAmount, setTotalAmount] = useState<string>('');
+  const [netAmount, setNetAmount] = useState<string>('');
 
   const filteredCategories = categories.filter(category => category.type === selectedType);
 
-  // Calculate total amount whenever amount, vatRate, or isVatClearable changes
+  // Calculate net amount whenever totalAmount, vatRate, or isVatClearable changes
   useEffect(() => {
-    if (!amount) {
-      setTotalAmount('');
+    if (!totalAmount) {
+      setNetAmount('');
       return;
     }
 
-    const amountValue = parseFloat(amount);
+    const totalValue = parseFloat(totalAmount);
     const vatRateValue = parseFloat(vatRate);
     
-    if (isNaN(amountValue) || isNaN(vatRateValue)) {
-      setTotalAmount('');
+    if (isNaN(totalValue) || isNaN(vatRateValue)) {
+      setNetAmount('');
       return;
     }
 
-    const vatAmount = amountValue * vatRateValue;
-    
-    // For expense transactions with non-clearable VAT, add VAT to the total
+    // For expense transactions with non-clearable VAT, subtract VAT to get net
     if (selectedType === 'expense' && !isVatClearable) {
-      setTotalAmount((amountValue + vatAmount).toFixed(2));
+      const vatDivisor = 1 + vatRateValue;
+      const netValue = totalValue / vatDivisor;
+      setNetAmount(netValue.toFixed(2));
     } else {
-      setTotalAmount(amountValue.toFixed(2));
+      // For income or clearable VAT expenses, the total and net are the same
+      setNetAmount(totalValue.toFixed(2));
     }
-  }, [amount, vatRate, isVatClearable, selectedType]);
+  }, [totalAmount, vatRate, isVatClearable, selectedType]);
 
   return (
     <>
@@ -127,13 +128,13 @@ export function TransactionFormFields({
       </div>
 
       <div className="space-y-2">
-        <Label>Amount (net)</Label>
+        <Label>Total Amount (including VAT)</Label>
         <Input 
           type="number" 
           step="0.01" 
-          name="amount" 
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)} 
+          name="total_amount" 
+          value={totalAmount}
+          onChange={(e) => setTotalAmount(e.target.value)} 
           required 
         />
       </div>
@@ -171,19 +172,19 @@ export function TransactionFormFields({
         </div>
       )}
 
-      {amount && vatRate && (
+      {totalAmount && vatRate && (
         <div className="p-3 border rounded-md bg-muted/50">
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>Net Amount:</div>
-            <div className="text-right font-medium">{parseFloat(amount).toFixed(2)}</div>
+            <div>Total Amount:</div>
+            <div className="text-right font-medium">{parseFloat(totalAmount).toFixed(2)}</div>
             
             <div>VAT ({(parseFloat(vatRate) * 100).toFixed(0)}%):</div>
             <div className="text-right font-medium">
-              {(parseFloat(amount) * parseFloat(vatRate)).toFixed(2)}
+              {(parseFloat(totalAmount) - parseFloat(netAmount)).toFixed(2)}
             </div>
             
-            <div className="font-semibold">Total:</div>
-            <div className="text-right font-semibold">{totalAmount}</div>
+            <div className="font-semibold">Net Amount:</div>
+            <div className="text-right font-semibold">{netAmount}</div>
             
             {selectedType === 'expense' && (
               <div className="col-span-2 text-xs text-muted-foreground pt-1">
@@ -238,8 +239,8 @@ export function TransactionFormFields({
 
       <input 
         type="hidden" 
-        name="total_amount" 
-        value={totalAmount || amount} 
+        name="amount" 
+        value={netAmount} 
       />
     </>
   );
