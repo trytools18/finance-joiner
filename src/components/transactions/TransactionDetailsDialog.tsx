@@ -61,7 +61,8 @@ export function TransactionDetailsDialog({
   const formatAmount = (amount: number) => formatCurrency(amount, currencyCode);
   const netAmount = transaction.amount;
   const vatAmount = transaction.vat_amount || 0;
-  const totalAmount = transaction.total_amount || (netAmount + vatAmount);
+  // Fix the calculation: total amount should be the sum of net amount and VAT amount
+  const totalAmount = netAmount + vatAmount;
 
   return (
     <Dialog open={!!transaction} onOpenChange={() => onClose()}>
