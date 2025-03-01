@@ -37,13 +37,15 @@ export function TransactionFormFields({
   const [vatRate, setVatRate] = useState<string>(defaultVatRate.toString());
   const [isVatClearable, setIsVatClearable] = useState<boolean>(true);
   const [netAmount, setNetAmount] = useState<string>('');
+  const [vatAmount, setVatAmount] = useState<string>('');
 
   const filteredCategories = categories.filter(category => category.type === selectedType);
 
-  // Calculate net amount whenever totalAmount, vatRate, or isVatClearable changes
+  // Calculate net amount and VAT whenever totalAmount or vatRate changes
   useEffect(() => {
     if (!totalAmount) {
       setNetAmount('');
+      setVatAmount('');
       return;
     }
 
@@ -52,19 +54,18 @@ export function TransactionFormFields({
     
     if (isNaN(totalValue) || isNaN(vatRateValue)) {
       setNetAmount('');
+      setVatAmount('');
       return;
     }
 
-    // For expense transactions with non-clearable VAT, subtract VAT to get net
-    if (selectedType === 'expense' && !isVatClearable) {
-      const vatDivisor = 1 + vatRateValue;
-      const netValue = totalValue / vatDivisor;
-      setNetAmount(netValue.toFixed(2));
-    } else {
-      // For income or clearable VAT expenses, the total and net are the same
-      setNetAmount(totalValue.toFixed(2));
-    }
-  }, [totalAmount, vatRate, isVatClearable, selectedType]);
+    // Calculate net and VAT from total
+    // Formula: net = total / (1 + vatRate)
+    const netValue = totalValue / (1 + vatRateValue);
+    const vatValue = totalValue - netValue;
+    
+    setNetAmount(netValue.toFixed(2));
+    setVatAmount(vatValue.toFixed(2));
+  }, [totalAmount, vatRate]);
 
   return (
     <>
@@ -180,7 +181,7 @@ export function TransactionFormFields({
             
             <div>VAT ({(parseFloat(vatRate) * 100).toFixed(0)}%):</div>
             <div className="text-right font-medium">
-              {(parseFloat(totalAmount) - parseFloat(netAmount)).toFixed(2)}
+              {vatAmount}
             </div>
             
             <div className="font-semibold">Net Amount:</div>
@@ -241,6 +242,12 @@ export function TransactionFormFields({
         type="hidden" 
         name="amount" 
         value={netAmount} 
+      />
+      
+      <input 
+        type="hidden" 
+        name="vat_amount" 
+        value={vatAmount} 
       />
     </>
   );

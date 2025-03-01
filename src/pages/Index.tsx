@@ -1,4 +1,3 @@
-
 import { BarChart3, PieChart, TrendingUp, Wallet, CreditCard } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { FeatureCard } from "@/components/FeatureCard";
@@ -165,18 +164,23 @@ const Index = () => {
         // Use total_amount if available, otherwise calculate it
         const amount = t.total_amount !== undefined && t.total_amount !== null
           ? t.total_amount
-          : t.amount;
+          : t.amount + (t.vat_amount || 0);
         return sum + Number(amount);
       }, 0);
 
     const totalExpenses = completedTransactions
       .filter(t => t.type === "expense")
       .reduce((sum, t) => {
-        // Use total_amount if available, otherwise calculate it
-        const amount = t.total_amount !== undefined && t.total_amount !== null
-          ? t.total_amount
-          : (t.amount + (t.vat_clearable ? 0 : Number(t.vat_amount || 0)));
-        return sum + Number(amount);
+        if (t.vat_clearable) {
+          // If VAT is clearable, only count the net amount as expense
+          return sum + Number(t.amount || 0);
+        } else {
+          // If VAT is not clearable, count total amount (net + VAT) as expense
+          const amount = t.total_amount !== undefined && t.total_amount !== null
+            ? t.total_amount
+            : t.amount + (t.vat_amount || 0);
+          return sum + Number(amount);
+        }
       }, 0);
 
     // Calculate VAT statistics
