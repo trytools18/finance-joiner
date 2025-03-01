@@ -161,15 +161,22 @@ const Index = () => {
 
     const totalIncome = completedTransactions
       .filter(t => t.type === "income")
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => {
+        // Use total_amount if available, otherwise calculate it
+        const amount = t.total_amount !== undefined && t.total_amount !== null
+          ? t.total_amount
+          : t.amount;
+        return sum + Number(amount);
+      }, 0);
 
     const totalExpenses = completedTransactions
       .filter(t => t.type === "expense")
       .reduce((sum, t) => {
-        const netAmount = Number(t.amount);
-        // Include VAT in expenses only if it's not clearable
-        const vatAmount = t.vat_clearable ? 0 : Number(t.vat_amount || 0);
-        return sum + netAmount + vatAmount;
+        // Use total_amount if available, otherwise calculate it
+        const amount = t.total_amount !== undefined && t.total_amount !== null
+          ? t.total_amount
+          : (t.amount + (t.vat_clearable ? 0 : Number(t.vat_amount || 0)));
+        return sum + Number(amount);
       }, 0);
 
     // Calculate VAT statistics
