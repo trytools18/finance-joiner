@@ -126,6 +126,31 @@ export const useTransactionData = () => {
     },
   });
 
+  const deleteTransactionsMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .in("id", ids);
+
+      if (error) {
+        toast({
+          title: "Error deleting transactions",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      toast({
+        title: "Transactions deleted",
+        description: "Selected transactions have been deleted successfully.",
+      });
+    },
+  });
+
   return {
     parties,
     categories,
@@ -133,5 +158,6 @@ export const useTransactionData = () => {
     categoriesError,
     updateStatusMutation,
     updateVATSettingsMutation,
+    deleteTransactionsMutation,
   };
 };

@@ -1,4 +1,5 @@
 
+
 export type TransactionCategory = "income" | "expense" | "transfer";
 export type PaymentMethod = "cash" | "card" | "online";
 export type TransactionStatus = "completed" | "pending" | "cancelled";
@@ -59,6 +60,9 @@ export interface Column {
   id: string;
   label: string;
   render: (transaction: Transaction) => React.ReactNode;
+  sortable?: boolean;
+  sortDirection?: 'asc' | 'desc' | null;
+  onSort?: () => void;
 }
 
 export interface VATUpdateInput {
@@ -66,3 +70,9 @@ export interface VATUpdateInput {
   vat_clearable: boolean;
   description?: string | null;
 }
+
+export interface SelectedTransactionsActions {
+  edit?: boolean;
+  delete?: boolean;
+}
+

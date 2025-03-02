@@ -161,11 +161,8 @@ const Index = () => {
     const totalIncome = completedTransactions
       .filter(t => t.type === "income")
       .reduce((sum, t) => {
-        // Use total_amount if available, otherwise calculate it
-        const amount = t.total_amount !== undefined && t.total_amount !== null
-          ? t.total_amount
-          : t.amount + (t.vat_amount || 0);
-        return sum + Number(amount);
+        // Only use the net amount for income (without VAT)
+        return sum + Number(t.amount || 0);
       }, 0);
 
     const totalExpenses = completedTransactions

@@ -1,9 +1,8 @@
-
 import { Table, TableHeader, TableRow } from "@/components/ui/table";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
-import { Transaction } from "./types";
+import { Transaction, SelectedTransactionsActions } from "./types";
 import { SortableHeader } from "./table/SortableHeader";
 import { TableContent } from "./table/TableContent";
 import { useTransactionData } from "./hooks/useTransactionData";
@@ -12,11 +11,13 @@ import { useTransactionFilters } from "./hooks/useTransactionFilters";
 import { DateRangePicker } from "./filters/DateRangePicker";
 import { TypeFilter } from "./filters/TypeFilter";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
 import { VATTracker } from "./VATTracker";
+import { SelectedTransactionsToolbar } from "./table/SelectedTransactionsToolbar";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -30,10 +31,12 @@ export const TransactionTable = ({
   transactions,
   currencyCode = "USD"
 }: TransactionTableProps) => {
-  const { parties, categories, updateStatusMutation } = useTransactionData();
+  const { parties, categories, updateStatusMutation, deleteTransactionsMutation } = useTransactionData();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const getPartyName = (partyId: string | null) => {
     if (!partyId) return "-";
@@ -133,9 +136,46 @@ export const TransactionTable = ({
   const sortedTransactions = sortTransactions(filteredTransactions);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  const handleRowClick = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
+  const handleRowClick = (transaction: Transaction, isSelectionMode: boolean) => {
+    if (isSelectionMode) {
+      handleTransactionSelect(transaction);
+    } else {
+      setSelectedTransaction(transaction);
+    }
   };
+
+  const handleTransactionSelect = (transaction: Transaction) => {
+    setSelectedTransactions(prev => {
+      const isSelected = prev.some(t => t.id === transaction.id);
+      
+      if (isSelected) {
+        return prev.filter(t => t.id !== transaction.id);
+      } else {
+        return [...prev, transaction];
+      }
+    });
+  };
+
+  const handleBulkAction = (action: keyof SelectedTransactionsActions) => {
+    if (action === "edit" && selectedTransactions.length === 1) {
+      setSelectedTransaction(selectedTransactions[0]);
+      setSelectedTransactions([]);
+    } else if (action === "delete") {
+      setShowDeleteDialog(true);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    const ids = selectedTransactions.map(t => t.id);
+    deleteTransactionsMutation.mutate(ids, {
+      onSuccess: () => {
+        setSelectedTransactions([]);
+        setShowDeleteDialog(false);
+      }
+    });
+  };
+
+  const isSelectionMode = selectedTransactions.length > 0;
 
   return (
     <div className="space-y-4">
@@ -145,7 +185,30 @@ export const TransactionTable = ({
         currencyCode={currencyCode}
       />
 
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedTransactions.length} {selectedTransactions.length === 1 ? 'transaction' : 'transactions'}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <VATTracker currencyCode={currencyCode} className="mb-6" />
+
+      <SelectedTransactionsToolbar 
+        selectedTransactions={selectedTransactions}
+        onCancel={() => setSelectedTransactions([])}
+        onAction={handleBulkAction}
+      />
 
       <div className="flex items-center justify-between">
         <Button 
@@ -210,6 +273,8 @@ export const TransactionTable = ({
                 transactions={sortedTransactions} 
                 columns={columns}
                 onRowClick={handleRowClick}
+                selectedTransactions={selectedTransactions}
+                isSelectionMode={isSelectionMode}
               />
             </DndContext>
           </Table>
