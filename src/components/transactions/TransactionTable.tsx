@@ -1,3 +1,4 @@
+
 import { Table, TableHeader, TableRow } from "@/components/ui/table";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
@@ -6,7 +7,6 @@ import { Transaction, SelectedTransactionsActions } from "./types";
 import { SortableHeader } from "./table/SortableHeader";
 import { TableContent } from "./table/TableContent";
 import { useTransactionData } from "./hooks/useTransactionData";
-import { useColumnDragAndDrop } from "./hooks/useColumnDragAndDrop";
 import { useTransactionFilters } from "./hooks/useTransactionFilters";
 import { DateRangePicker } from "./filters/DateRangePicker";
 import { TypeFilter } from "./filters/TypeFilter";
