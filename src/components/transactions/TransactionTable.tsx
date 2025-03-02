@@ -18,6 +18,9 @@ import { useState } from "react";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
 import { VATTracker } from "./VATTracker";
 import { SelectedTransactionsToolbar } from "./table/SelectedTransactionsToolbar";
+import { DragEndEvent, MouseSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import { createTableColumns } from "./table/TableColumns";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -26,6 +29,47 @@ interface TransactionTableProps {
 
 type SortDirection = "asc" | "desc" | null;
 type SortField = "date" | "party" | "category" | "amount" | "description" | "payment_method" | null;
+
+// Local implementation of useColumnDragAndDrop hook
+const useColumnDragAndDrop = ({
+  getPartyName,
+  getCategoryName,
+  handleStatusChange,
+  currencyCode
+}: {
+  getPartyName: (partyId: string | null) => string;
+  getCategoryName: (transaction: Transaction) => string;
+  handleStatusChange: (id: string, status: Transaction['status']) => void;
+  currencyCode: "USD" | "EUR" | "GBP";
+}) => {
+  const sensors = useSensors(useSensor(MouseSensor));
+  const [columns, setColumns] = useState(() => 
+    createTableColumns(
+      getPartyName,
+      getCategoryName,
+      handleStatusChange,
+      () => {}, // Default empty function for vatClearableChange
+      currencyCode
+    )
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setColumns((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  return {
+    sensors,
+    columns,
+    handleDragEnd
+  };
+};
 
 export const TransactionTable = ({
   transactions,
