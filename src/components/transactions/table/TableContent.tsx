@@ -40,7 +40,7 @@ export const TableContent = ({
           >
             {columns.map((column, index) => (
               <TableCell key={`${transaction.id}-${column.id}`}>
-                {index === 0 && (
+                {index === 0 && isSelectionMode && (
                   <span 
                     className="mr-2 inline-block align-middle" 
                     onClick={(e) => {

@@ -12,7 +12,7 @@ import { DateRangePicker } from "./filters/DateRangePicker";
 import { TypeFilter } from "./filters/TypeFilter";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ChevronDown, ChevronUp, Filter } from "lucide-react";
+import { ChevronDown, ChevronUp, Filter, ListChecks, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
@@ -21,6 +21,7 @@ import { SelectedTransactionsToolbar } from "./table/SelectedTransactionsToolbar
 import { DragEndEvent, MouseSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { createTableColumns } from "./table/TableColumns";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -83,6 +84,11 @@ export const TransactionTable = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const transactionsPerPage = 10;
 
   const getPartyName = (partyId: string | null) => {
     if (!partyId) return "-";
@@ -187,8 +193,14 @@ export const TransactionTable = ({
   const sortedTransactions = sortTransactions(filteredTransactions);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  const handleRowClick = (transaction: Transaction, isSelectionMode: boolean) => {
-    if (isSelectionMode) {
+  // Calculate pagination
+  const indexOfLastTransaction = currentPage * transactionsPerPage;
+  const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
+  const currentTransactions = sortedTransactions.slice(indexOfFirstTransaction, indexOfLastTransaction);
+  const totalPages = Math.ceil(sortedTransactions.length / transactionsPerPage);
+
+  const handleRowClick = (transaction: Transaction, isSelectMode: boolean) => {
+    if (isSelectMode) {
       handleTransactionSelect(transaction);
     } else {
       setSelectedTransaction(transaction);
@@ -211,6 +223,7 @@ export const TransactionTable = ({
     if (action === "edit" && selectedTransactions.length === 1) {
       setSelectedTransaction(selectedTransactions[0]);
       setSelectedTransactions([]);
+      setIsSelectionMode(false);
     } else if (action === "delete") {
       setShowDeleteDialog(true);
     }
@@ -222,11 +235,17 @@ export const TransactionTable = ({
       onSuccess: () => {
         setSelectedTransactions([]);
         setShowDeleteDialog(false);
+        setIsSelectionMode(false);
       }
     });
   };
 
-  const isSelectionMode = selectedTransactions.length > 0;
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    if (isSelectionMode) {
+      setSelectedTransactions([]);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -257,25 +276,40 @@ export const TransactionTable = ({
 
       <SelectedTransactionsToolbar 
         selectedTransactions={selectedTransactions}
-        onCancel={() => setSelectedTransactions([])}
+        onCancel={() => {
+          setSelectedTransactions([]);
+          setIsSelectionMode(false);
+        }}
         onAction={handleBulkAction}
       />
 
       <div className="flex items-center justify-between">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          Filters
-          {isFilterOpen ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            {isFilterOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant={isSelectionMode ? "secondary" : "outline"}
+            size="sm"
+            onClick={toggleSelectionMode}
+            className="flex items-center gap-2"
+            title={isSelectionMode ? "Exit selection mode" : "Enter selection mode"}
+          >
+            <ListChecks className="h-4 w-4" />
+            {isSelectionMode ? "Cancel Selection" : "Select Rows"}
+          </Button>
+        </div>
       </div>
 
       {isFilterOpen && (
@@ -321,7 +355,7 @@ export const TransactionTable = ({
                 </TableRow>
               </TableHeader>
               <TableContent 
-                transactions={sortedTransactions} 
+                transactions={currentTransactions} 
                 columns={columns}
                 onRowClick={handleRowClick}
                 selectedTransactions={selectedTransactions}
@@ -331,6 +365,52 @@ export const TransactionTable = ({
           </Table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {sortedTransactions.length > transactionsPerPage && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              // Logic to show pagination numbers around current page
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <PaginationItem key={pageNum}>
+                  <PaginationLink 
+                    isActive={pageNum === currentPage}
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            })}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 }
