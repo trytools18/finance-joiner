@@ -35,11 +35,13 @@ const useColumnDragAndDrop = ({
   getPartyName,
   getCategoryName,
   handleStatusChange,
+  handleVatClearableChange,
   currencyCode
 }: {
   getPartyName: (partyId: string | null) => string;
   getCategoryName: (transaction: Transaction) => string;
   handleStatusChange: (id: string, status: Transaction['status']) => void;
+  handleVatClearableChange: (id: string, vatClearable: boolean) => void;
   currencyCode: "USD" | "EUR" | "GBP";
 }) => {
   const sensors = useSensors(useSensor(MouseSensor));
@@ -48,7 +50,7 @@ const useColumnDragAndDrop = ({
       getPartyName,
       getCategoryName,
       handleStatusChange,
-      () => {}, // Default empty function for vatClearableChange
+      handleVatClearableChange,
       currencyCode
     )
   );
@@ -75,7 +77,7 @@ export const TransactionTable = ({
   transactions,
   currencyCode = "USD"
 }: TransactionTableProps) => {
-  const { parties, categories, updateStatusMutation, deleteTransactionsMutation } = useTransactionData();
+  const { parties, categories, updateStatusMutation, deleteTransactionsMutation, updateVATSettingsMutation } = useTransactionData();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -108,6 +110,10 @@ export const TransactionTable = ({
 
   const handleStatusChange = (id: string, status: Transaction['status']) => {
     updateStatusMutation.mutate({ id, status });
+  };
+
+  const handleVatClearableChange = (id: string, vatClearable: boolean) => {
+    updateVATSettingsMutation.mutate({ id, vat_clearable: vatClearable });
   };
 
   const handleSort = (field: SortField) => {
@@ -167,6 +173,7 @@ export const TransactionTable = ({
     getPartyName,
     getCategoryName,
     handleStatusChange,
+    handleVatClearableChange,
     currencyCode
   });
 

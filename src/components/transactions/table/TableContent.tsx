@@ -40,11 +40,17 @@ export const TableContent = ({
           >
             {columns.map((column, index) => (
               <TableCell key={`${transaction.id}-${column.id}`}>
-                {index === 0 && isSelectionMode && (
-                  <span className="mr-2 inline-flex" onClick={(e) => e.stopPropagation()}>
+                {index === 0 && (
+                  <span 
+                    className="mr-2 inline-block align-middle" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRowClick?.(transaction, true);
+                    }}
+                  >
                     <Checkbox 
                       checked={isSelected(transaction)}
-                      onCheckedChange={() => onRowClick?.(transaction, true)}
+                      className="translate-y-[2px]"
                     />
                   </span>
                 )}
