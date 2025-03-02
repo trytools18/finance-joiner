@@ -12,7 +12,7 @@ import { DateRangePicker } from "./filters/DateRangePicker";
 import { TypeFilter } from "./filters/TypeFilter";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ChevronDown, ChevronUp, Filter, ListChecks, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronUp, Filter, ListChecks } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
@@ -22,6 +22,8 @@ import { DragEndEvent, MouseSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable";
 import { createTableColumns } from "./table/TableColumns";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { NewTransactionDialog } from "./NewTransactionDialog";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -85,6 +87,8 @@ export const TransactionTable = ({
   const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -191,8 +195,7 @@ export const TransactionTable = ({
   }));
 
   const sortedTransactions = sortTransactions(filteredTransactions);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-
+  
   // Calculate pagination
   const indexOfLastTransaction = currentPage * transactionsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
@@ -203,7 +206,8 @@ export const TransactionTable = ({
     if (isSelectMode) {
       handleTransactionSelect(transaction);
     } else {
-      setSelectedTransaction(transaction);
+      setEditTransaction(transaction);
+      setShowEditDialog(true);
     }
   };
 
@@ -221,7 +225,8 @@ export const TransactionTable = ({
 
   const handleBulkAction = (action: keyof SelectedTransactionsActions) => {
     if (action === "edit" && selectedTransactions.length === 1) {
-      setSelectedTransaction(selectedTransactions[0]);
+      setEditTransaction(selectedTransactions[0]);
+      setShowEditDialog(true);
       setSelectedTransactions([]);
       setIsSelectionMode(false);
     } else if (action === "delete") {
@@ -247,14 +252,30 @@ export const TransactionTable = ({
     }
   };
 
+  const closeEditDialog = () => {
+    setShowEditDialog(false);
+    setEditTransaction(null);
+  };
+
   return (
     <div className="space-y-4">
-      <TransactionDetailsDialog
-        transaction={selectedTransaction}
-        onClose={() => setSelectedTransaction(null)}
-        currencyCode={currencyCode}
-      />
+      {/* Edit Transaction Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Transaction</DialogTitle>
+          </DialogHeader>
+          <NewTransactionDialog 
+            isOpen={showEditDialog}
+            setIsOpen={setShowEditDialog}
+            transactionToEdit={editTransaction} 
+            onClose={closeEditDialog}
+            currencyCode={currencyCode}
+          />
+        </DialogContent>
+      </Dialog>
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
