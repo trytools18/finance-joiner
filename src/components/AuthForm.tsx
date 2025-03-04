@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -34,6 +33,11 @@ export const AuthForm = () => {
         await signIn(email, password);
       } else {
         await signUp(email, password);
+        // For demo purposes, we'll automatically sign in after signup
+        // This would normally be handled by email verification
+        if (!isSignIn) {
+          await signIn(email, password);
+        }
       }
     } catch (error) {
       // Error is handled in the auth context
