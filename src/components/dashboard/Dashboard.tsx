@@ -270,7 +270,11 @@ export const Dashboard = () => {
         <StatCard
           title="VAT Received"
           value={formatAmount(stats.vatReceived)}
-          icon={CreditCard}
+          <div className="flex items-center space-x-4">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <ArrowUpCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
           description="Total VAT collected from completed sales"
         />
         <StatCard
