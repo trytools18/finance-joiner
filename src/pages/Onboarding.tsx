@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Json } from "@supabase/supabase-js";
 
 const currencyOptions = [
   { label: "USD - US Dollar", value: "USD" },
@@ -52,24 +52,21 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      // Save business info to localStorage for now
-      localStorage.setItem("businessName", businessName);
-      localStorage.setItem("businessType", businessType);
-
-      // Create organization settings in Supabase - wrap object in an array to match expected type
       const { error } = await supabase
         .from("organization_settings")
-        .insert([{
+        .insert({
           user_id: user.id,
-          default_currency: currency,
-          default_payment_method: defaultPaymentMethod,
+          business_name: businessName,
+          business_type: businessType,
+          default_currency: currency as "USD" | "EUR" | "GBP",
+          default_payment_method: defaultPaymentMethod as 
+            "bank_transfer" | "credit_card" | "cash" | "online",
           default_vat_rate: defaultVatRate,
-          vat_rates: defaultVatRates,
-        }]);
+          vat_rates: defaultVatRates as unknown as Json,
+        });
 
       if (error) throw error;
 
-      // Mark onboarding as complete
       completeOnboarding();
       
       toast({
@@ -77,7 +74,6 @@ export default function Onboarding() {
         description: "Your business is ready to go.",
       });
       
-      // Redirect to dashboard
       navigate("/");
     } catch (error: any) {
       toast({
@@ -139,7 +135,17 @@ export default function Onboarding() {
 
             <Button 
               className="w-full mt-6" 
-              onClick={() => setStep(2)}
+              onClick={() => {
+                if (!businessName.trim()) {
+                  toast({
+                    title: "Business name required",
+                    description: "Please enter your business name",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setStep(2);
+              }}
             >
               Continue
             </Button>
