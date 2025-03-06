@@ -99,18 +99,16 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      // Insert organization settings
+      // Insert organization settings - Fixed the insert operation to match DB schema
       const { error: settingsError } = await supabase
         .from("organization_settings")
-        .insert([{
+        .insert({
           user_id: user.id,
-          business_name: businessName,
-          business_type: businessType,
           default_currency: currency,
           default_payment_method: defaultPaymentMethod,
           default_vat_rate: defaultVatRate,
           vat_rates: defaultVatRates,
-        }]);
+        });
 
       if (settingsError) throw settingsError;
 
