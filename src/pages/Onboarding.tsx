@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Json } from "@/integrations/supabase/types";
+import { Plus, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const currencyOptions = [
   { label: "USD - US Dollar", value: "USD" },
@@ -22,7 +24,7 @@ const paymentMethodOptions = [
   { label: "Online", value: "online" },
 ];
 
-const defaultVatRates = [0, 0.1, 0.24];
+const defaultVatRates = [0, 0.13, 0.24];
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -39,6 +41,51 @@ export default function Onboarding() {
   const [currency, setCurrency] = useState("USD");
   const [defaultPaymentMethod, setDefaultPaymentMethod] = useState("online");
   const [defaultVatRate, setDefaultVatRate] = useState(0.24);
+  
+  // Parties and Categories
+  const [newParty, setNewParty] = useState({ name: "", type: "customer", company_name: "" });
+  const [partyList, setPartyList] = useState<Array<{ name: string; type: string; company_name: string }>>([]);
+  
+  const [newCategory, setNewCategory] = useState({ name: "", type: "expense" });
+  const [categoryList, setCategoryList] = useState<Array<{ name: string; type: string }>>([]);
+
+  const addParty = () => {
+    if (newParty.name.trim()) {
+      setPartyList([...partyList, { ...newParty }]);
+      setNewParty({ name: "", type: "customer", company_name: "" });
+    } else {
+      toast({
+        title: "Party name required",
+        description: "Please enter a name for the transaction party",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeParty = (index: number) => {
+    const updatedList = [...partyList];
+    updatedList.splice(index, 1);
+    setPartyList(updatedList);
+  };
+
+  const addCategory = () => {
+    if (newCategory.name.trim()) {
+      setCategoryList([...categoryList, { ...newCategory }]);
+      setNewCategory({ name: "", type: "expense" });
+    } else {
+      toast({
+        title: "Category name required",
+        description: "Please enter a name for the transaction category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeCategory = (index: number) => {
+    const updatedList = [...categoryList];
+    updatedList.splice(index, 1);
+    setCategoryList(updatedList);
+  };
 
   const handleSubmit = async () => {
     if (!user) {
@@ -52,10 +99,10 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      // Insert a single object to the organization_settings table
-      const { error } = await supabase
+      // Insert organization settings
+      const { error: settingsError } = await supabase
         .from("organization_settings")
-        .insert({
+        .insert([{
           user_id: user.id,
           business_name: businessName,
           business_type: businessType,
@@ -63,9 +110,44 @@ export default function Onboarding() {
           default_payment_method: defaultPaymentMethod,
           default_vat_rate: defaultVatRate,
           vat_rates: defaultVatRates,
-        });
+        }]);
 
-      if (error) throw error;
+      if (settingsError) throw settingsError;
+
+      // Insert transaction parties if any
+      if (partyList.length > 0) {
+        const partyData = partyList.map(party => ({
+          user_id: user.id,
+          name: party.name,
+          type: party.type,
+          company_name: party.company_name || null
+        }));
+        
+        const { error: partiesError } = await supabase
+          .from("transaction_parties")
+          .insert(partyData);
+          
+        if (partiesError) {
+          console.error("Error adding parties:", partiesError);
+        }
+      }
+
+      // Insert transaction categories if any
+      if (categoryList.length > 0) {
+        const categoryData = categoryList.map(category => ({
+          user_id: user.id,
+          name: category.name,
+          type: category.type
+        }));
+        
+        const { error: categoriesError } = await supabase
+          .from("transaction_categories")
+          .insert(categoryData);
+          
+        if (categoriesError) {
+          console.error("Error adding categories:", categoriesError);
+        }
+      }
 
       // Mark onboarding as complete
       completeOnboarding();
@@ -98,6 +180,7 @@ export default function Onboarding() {
             <div className="flex space-x-2">
               <div className={`h-2 w-8 rounded ${step >= 1 ? "bg-primary" : "bg-gray-200"}`} />
               <div className={`h-2 w-8 rounded ${step >= 2 ? "bg-primary" : "bg-gray-200"}`} />
+              <div className={`h-2 w-8 rounded ${step >= 3 ? "bg-primary" : "bg-gray-200"}`} />
             </div>
           </div>
         </div>
@@ -206,7 +289,7 @@ export default function Onboarding() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">0% (No VAT)</SelectItem>
-                  <SelectItem value="0.1">10%</SelectItem>
+                  <SelectItem value="0.13">13%</SelectItem>
                   <SelectItem value="0.24">24%</SelectItem>
                 </SelectContent>
               </Select>
@@ -217,6 +300,164 @@ export default function Onboarding() {
                 variant="outline" 
                 className="flex-1" 
                 onClick={() => setStep(1)}
+              >
+                Back
+              </Button>
+              <Button 
+                className="flex-1" 
+                onClick={() => setStep(3)}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Transaction Data (Optional)</h2>
+            <p className="text-sm text-gray-500">You can add transaction parties and categories now or later in settings.</p>
+            
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium">Transaction Parties</h3>
+              
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <Input
+                      placeholder="Party name"
+                      value={newParty.name}
+                      onChange={(e) => setNewParty({...newParty, name: e.target.value})}
+                    />
+                  </div>
+                  <Select
+                    value={newParty.type}
+                    onValueChange={(value) => setNewParty({...newParty, type: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="vendor">Vendor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Input
+                  placeholder="Company name (optional)"
+                  value={newParty.company_name}
+                  onChange={(e) => setNewParty({...newParty, company_name: e.target.value})}
+                />
+                
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  onClick={addParty}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Party
+                </Button>
+              </div>
+              
+              {partyList.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  <h4 className="text-sm font-medium">Added Parties:</h4>
+                  <div className="max-h-32 overflow-y-auto space-y-2">
+                    {partyList.map((party, index) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                        <div>
+                          <p className="font-medium">{party.name}</p>
+                          {party.company_name && (
+                            <p className="text-xs text-gray-500">{party.company_name}</p>
+                          )}
+                          <span className="text-xs bg-gray-200 px-2 py-0.5 rounded-full">
+                            {party.type}
+                          </span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeParty(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-3 pt-2">
+              <h3 className="text-lg font-medium">Transaction Categories</h3>
+              
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <Input
+                      placeholder="Category name"
+                      value={newCategory.name}
+                      onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                    />
+                  </div>
+                  <Select
+                    value={newCategory.type}
+                    onValueChange={(value) => setNewCategory({...newCategory, type: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income">Income</SelectItem>
+                      <SelectItem value="expense">Expense</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  onClick={addCategory}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
+              </div>
+              
+              {categoryList.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  <h4 className="text-sm font-medium">Added Categories:</h4>
+                  <div className="max-h-32 overflow-y-auto space-y-2">
+                    {categoryList.map((category, index) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                        <div>
+                          <p className="font-medium">{category.name}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            category.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {category.type}
+                          </span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeCategory(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button 
+                variant="outline" 
+                className="flex-1" 
+                onClick={() => setStep(2)}
               >
                 Back
               </Button>
