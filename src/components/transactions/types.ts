@@ -1,5 +1,3 @@
-
-
 export type TransactionCategory = "income" | "expense" | "transfer";
 export type PaymentMethod = "cash" | "card" | "online";
 export type TransactionStatus = "completed" | "pending" | "cancelled";
@@ -22,6 +20,11 @@ export interface NewTransactionDialogProps {
   defaultVatRate?: number;
   vatRates?: number[];
   defaultCurrency?: "USD" | "EUR" | "GBP";
+  isOpen?: boolean;
+  setIsOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+  transactionToEdit?: Transaction | null;
+  onClose?: () => void;
+  currencyCode?: "USD" | "EUR" | "GBP";
 }
 
 export interface TransactionFormData {
@@ -75,4 +78,3 @@ export interface SelectedTransactionsActions {
   edit?: boolean;
   delete?: boolean;
 }
-

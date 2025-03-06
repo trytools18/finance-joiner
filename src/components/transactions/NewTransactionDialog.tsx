@@ -12,11 +12,19 @@ export function NewTransactionDialog({
   defaultPaymentMethod = "online",
   defaultVatRate = 0.24,
   vatRates = [0.24, 0.14, 0.10, 0],
-  defaultCurrency = "USD"
+  defaultCurrency = "USD",
+  isOpen,
+  setIsOpen,
+  transactionToEdit = null,
+  onClose
 }: NewTransactionDialogProps) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const queryClient = useQueryClient();
+  
+  // Use the controlled open state if provided, otherwise use internal state
+  const dialogOpen = isOpen !== undefined ? isOpen : open;
+  const setDialogOpen = setIsOpen || setOpen;
 
   const { data: parties = [] } = useQuery({
     queryKey: ["transaction-parties"],
@@ -87,12 +95,13 @@ export function NewTransactionDialog({
 
     if (!error) {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      setOpen(false);
+      setDialogOpen(false);
+      if (onClose) onClose();
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
@@ -112,13 +121,23 @@ export function NewTransactionDialog({
             defaultPaymentMethod={defaultPaymentMethod}
             defaultVatRate={defaultVatRate}
             vatRates={vatRates}
+            transaction={transactionToEdit}
           />
           
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+            <Button 
+              variant="outline" 
+              type="button" 
+              onClick={() => {
+                setDialogOpen(false);
+                if (onClose) onClose();
+              }}
+            >
               Cancel
             </Button>
-            <Button type="submit">Add Transaction</Button>
+            <Button type="submit">
+              {transactionToEdit ? "Update" : "Add"} Transaction
+            </Button>
           </div>
         </form>
       </DialogContent>
