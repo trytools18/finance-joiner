@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Json } from "@/integrations/supabase/types";
 
 const currencyOptions = [
   { label: "USD - US Dollar", value: "USD" },
@@ -50,20 +52,22 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
+      // Insert a single object to the organization_settings table
       const { error } = await supabase
         .from("organization_settings")
         .insert({
           user_id: user.id,
           business_name: businessName,
           business_type: businessType,
-          default_currency: currency as "USD" | "EUR" | "GBP",
-          default_payment_method: defaultPaymentMethod as "cash" | "card" | "online",
+          default_currency: currency,
+          default_payment_method: defaultPaymentMethod,
           default_vat_rate: defaultVatRate,
           vat_rates: defaultVatRates,
         });
 
       if (error) throw error;
 
+      // Mark onboarding as complete
       completeOnboarding();
       
       toast({

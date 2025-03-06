@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,6 +49,7 @@ const AppRoutes = () => {
         path="/onboarding" 
         element={
           user ? (
+            // Only allow access to onboarding if the user is new or hasn't completed onboarding
             isNewUser || !onboardingCompleted ? (
               <Onboarding />
             ) : (
