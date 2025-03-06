@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -55,16 +56,16 @@ export default function Onboarding() {
       localStorage.setItem("businessName", businessName);
       localStorage.setItem("businessType", businessType);
 
-      // Create organization settings in Supabase
+      // Create organization settings in Supabase - wrap object in an array to match expected type
       const { error } = await supabase
         .from("organization_settings")
-        .insert({
+        .insert([{
           user_id: user.id,
           default_currency: currency,
           default_payment_method: defaultPaymentMethod,
           default_vat_rate: defaultVatRate,
           vat_rates: defaultVatRates,
-        });
+        }]);
 
       if (error) throw error;
 
