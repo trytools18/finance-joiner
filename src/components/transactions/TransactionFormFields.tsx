@@ -1,4 +1,3 @@
-
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
@@ -11,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Category, TransactionParty, PaymentMethod } from "./types";
+import { Category, TransactionParty, PaymentMethod, Transaction } from "./types";
 
 interface TransactionFormFieldsProps {
   date: Date;
@@ -21,6 +20,7 @@ interface TransactionFormFieldsProps {
   defaultPaymentMethod: PaymentMethod;
   defaultVatRate: number;
   vatRates: number[];
+  transaction?: Transaction | null;
 }
 
 export function TransactionFormFields({
@@ -31,6 +31,7 @@ export function TransactionFormFields({
   defaultPaymentMethod,
   defaultVatRate,
   vatRates,
+  transaction
 }: TransactionFormFieldsProps) {
   const [selectedType, setSelectedType] = useState<'income' | 'expense'>('expense');
   const [totalAmount, setTotalAmount] = useState<string>('');
