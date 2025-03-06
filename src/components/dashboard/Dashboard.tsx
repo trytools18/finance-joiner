@@ -13,10 +13,17 @@ import { NewTransactionDialog } from "@/components/transactions/NewTransactionDi
 import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { VATTracker } from "@/components/transactions/VATTracker";
 import { DashboardLoading } from "./DashboardLoading";
+import { useTransactionFilters } from "../transactions/hooks/useTransactionFilters";
+import { useTransactionData } from "../transactions/hooks/useTransactionData";
+import { TransactionFilters } from "../transactions/filters/TransactionFilters";
+import { TransactionTrends } from "./graphs/TransactionTrends";
+import { ExpenseCategories } from "./graphs/ExpenseCategories";
+import { IncomeCategories } from "./graphs/IncomeCategories";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
 
 export const Dashboard = () => {
   const { user } = useAuth();
+  const { parties, categories } = useTransactionData();
   const [realtimeTransactions, setRealtimeTransactions] = useState<Transaction[]>([]);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
@@ -93,9 +100,35 @@ export const Dashboard = () => {
   // Use the real-time transactions if available, otherwise use the query data
   const currentTransactions = realtimeTransactions.length ? realtimeTransactions : transactions;
 
+  // Helper functions for filtering
+  const getPartyName = (partyId: string | null): string => {
+    if (!partyId) return 'Unknown';
+    const party = parties.find(p => p.id === partyId);
+    return party ? party.name : 'Unknown';
+  };
+
+  const getCategoryName = (transaction: Transaction): string => {
+    if (!transaction.category_id) return 'Uncategorized';
+    const category = categories.find(c => c.id === transaction.category_id);
+    return category ? category.name : 'Uncategorized';
+  };
+
+  // Use transaction filters hook
+  const {
+    filteredTransactions,
+    dateRange,
+    setDateRange,
+    transactionType,
+    setTransactionType,
+    searchTerm,
+    setSearchTerm,
+    clearFilters,
+    hasActiveFilters
+  } = useTransactionFilters(currentTransactions, getPartyName, getCategoryName);
+
   // Memoized statistics calculations
   const stats = useMemo(() => {
-    const completedTransactions = currentTransactions.filter(t => t.status === 'completed');
+    const completedTransactions = filteredTransactions.filter(t => t.status === 'completed');
 
     const totalIncome = completedTransactions
       .filter(t => t.type === "income")
@@ -136,11 +169,24 @@ export const Dashboard = () => {
       vatPaid,
       vatBalance: vatReceived - vatPaid
     };
-  }, [currentTransactions]);
+  }, [filteredTransactions]);
 
   const formatAmount = (amount: number) => {
     return formatCurrency(amount, settings?.default_currency || 'USD');
   };
+
+  const chartDateRange = useMemo(() => {
+    if (dateRange?.from && dateRange?.to) {
+      return { start: dateRange.from, end: dateRange.to };
+    }
+    
+    // Default to last 30 days if no date range is selected
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    
+    return { start, end };
+  }, [dateRange]);
 
   const isLoading = isSettingsLoading || isTransactionsLoading;
 
@@ -163,6 +209,18 @@ export const Dashboard = () => {
         </div>
       </div>
       
+      {/* Transaction Filters */}
+      <TransactionFilters
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        transactionType={transactionType}
+        setTransactionType={setTransactionType}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        hasActiveFilters={hasActiveFilters}
+        clearFilters={clearFilters}
+      />
+      
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           title="Income"
@@ -183,6 +241,27 @@ export const Dashboard = () => {
           value={formatAmount(stats.balance)}
           icon={Wallet}
           description="Current balance (completed transactions)"
+        />
+      </div>
+
+      {/* Transaction Trend Graph */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <TransactionTrends 
+          transactions={currentTransactions} 
+          dateRange={chartDateRange}
+          currencyCode={settings?.default_currency}
+        />
+      </div>
+
+      {/* Category Distribution Graphs */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <ExpenseCategories 
+          transactions={filteredTransactions} 
+          currencyCode={settings?.default_currency}
+        />
+        <IncomeCategories 
+          transactions={filteredTransactions} 
+          currencyCode={settings?.default_currency}
         />
       </div>
 
@@ -216,7 +295,7 @@ export const Dashboard = () => {
           </Button>
         </div>
         <TransactionTable 
-          transactions={currentTransactions} 
+          transactions={filteredTransactions} 
           currencyCode={settings?.default_currency}
         />
       </div>
