@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Json } from "@supabase/supabase-js";
 
 const currencyOptions = [
   { label: "USD - US Dollar", value: "USD" },
@@ -16,8 +15,7 @@ const currencyOptions = [
 ];
 
 const paymentMethodOptions = [
-  { label: "Bank Transfer", value: "bank_transfer" },
-  { label: "Credit Card", value: "credit_card" },
+  { label: "Card", value: "card" },
   { label: "Cash", value: "cash" },
   { label: "Online", value: "online" },
 ];
@@ -59,10 +57,9 @@ export default function Onboarding() {
           business_name: businessName,
           business_type: businessType,
           default_currency: currency as "USD" | "EUR" | "GBP",
-          default_payment_method: defaultPaymentMethod as 
-            "bank_transfer" | "credit_card" | "cash" | "online",
+          default_payment_method: defaultPaymentMethod as "cash" | "card" | "online",
           default_vat_rate: defaultVatRate,
-          vat_rates: defaultVatRates as unknown as Json,
+          vat_rates: defaultVatRates,
         });
 
       if (error) throw error;
