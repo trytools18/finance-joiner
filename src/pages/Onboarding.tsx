@@ -99,18 +99,45 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      // Insert organization settings - Fixed the insert operation to match DB schema
-      const { error: settingsError } = await supabase
+      // Check if user already has organization settings
+      const { data: existingSettings, error: fetchError } = await supabase
         .from("organization_settings")
-        .insert({
-          user_id: user.id,
-          default_currency: currency,
-          default_payment_method: defaultPaymentMethod,
-          default_vat_rate: defaultVatRate,
-          vat_rates: defaultVatRates,
-        });
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (settingsError) throw settingsError;
+      if (fetchError) {
+        console.error("Error checking existing settings:", fetchError);
+      }
+
+      // If settings exist, update them, otherwise insert new settings
+      if (existingSettings) {
+        // Update existing settings
+        const { error: updateError } = await supabase
+          .from("organization_settings")
+          .update({
+            default_currency: currency,
+            default_payment_method: defaultPaymentMethod,
+            default_vat_rate: defaultVatRate,
+            vat_rates: defaultVatRates,
+          })
+          .eq("user_id", user.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new settings
+        const { error: insertError } = await supabase
+          .from("organization_settings")
+          .insert({
+            user_id: user.id,
+            default_currency: currency,
+            default_payment_method: defaultPaymentMethod,
+            default_vat_rate: defaultVatRate,
+            vat_rates: defaultVatRates,
+          });
+
+        if (insertError) throw insertError;
+      }
 
       // Insert transaction parties if any
       if (partyList.length > 0) {
