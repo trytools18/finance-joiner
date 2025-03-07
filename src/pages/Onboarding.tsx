@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Json } from "@/integrations/supabase/types";
 import { Plus, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 
 const currencyOptions = [
   { label: "USD - US Dollar", value: "USD" },
@@ -37,9 +35,9 @@ export default function Onboarding() {
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("freelancer");
   
-  // Settings
-  const [currency, setCurrency] = useState("USD");
-  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState("online");
+  // Settings - Explicitly type these with the expected string literal types
+  const [currency, setCurrency] = useState<"USD" | "EUR" | "GBP">("USD");
+  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState<"cash" | "card" | "online">("online");
   const [defaultVatRate, setDefaultVatRate] = useState(0.24);
   
   // Parties and Categories
@@ -112,20 +110,20 @@ export default function Onboarding() {
 
       // If settings exist, update them, otherwise insert new settings
       if (existingSettings) {
-        // Update existing settings
+        // Update existing settings - Cast the vat_rates to Json type
         const { error: updateError } = await supabase
           .from("organization_settings")
           .update({
             default_currency: currency,
             default_payment_method: defaultPaymentMethod,
             default_vat_rate: defaultVatRate,
-            vat_rates: defaultVatRates,
+            vat_rates: defaultVatRates as unknown as Json,
           })
           .eq("user_id", user.id);
 
         if (updateError) throw updateError;
       } else {
-        // Insert new settings
+        // Insert new settings - Cast the vat_rates to Json type
         const { error: insertError } = await supabase
           .from("organization_settings")
           .insert({
@@ -133,7 +131,7 @@ export default function Onboarding() {
             default_currency: currency,
             default_payment_method: defaultPaymentMethod,
             default_vat_rate: defaultVatRate,
-            vat_rates: defaultVatRates,
+            vat_rates: defaultVatRates as unknown as Json,
           });
 
         if (insertError) throw insertError;
