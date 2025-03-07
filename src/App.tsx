@@ -19,12 +19,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return <div>Loading...</div>;
   
   if (!user) {
+    console.log("ProtectedRoute: No user found, redirecting to home");
     return <Navigate to="/" />;
   }
   
   // If user is new and hasn't completed onboarding, redirect to onboarding
   if (isNewUser && !onboardingCompleted) {
-    console.log("Protected route: User is new and hasn't completed onboarding, redirecting");
+    console.log("ProtectedRoute: User is new and hasn't completed onboarding, redirecting");
     return <Navigate to="/onboarding" />;
   }
   
@@ -37,7 +38,7 @@ const AppRoutes = () => {
   
   console.log("AppRoutes rendering with user:", !!user, "isNewUser:", isNewUser, "onboardingCompleted:", onboardingCompleted);
   
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
   
   return (
     <Routes>

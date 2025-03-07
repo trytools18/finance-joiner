@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export default function Onboarding() {
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("freelancer");
   
-  // Settings - Explicitly type these with the expected string literal types
+  // Settings
   const [currency, setCurrency] = useState<"USD" | "EUR" | "GBP">("USD");
   const [defaultPaymentMethod, setDefaultPaymentMethod] = useState<"cash" | "card" | "online">("online");
   const [defaultVatRate, setDefaultVatRate] = useState(0.24);
@@ -191,9 +192,9 @@ export default function Onboarding() {
         }
       }
 
-      console.log("Onboarding completed successfully");
+      console.log("Onboarding data saved successfully, now completing onboarding");
       
-      // Mark onboarding as complete
+      // Mark onboarding as complete BEFORE showing the toast
       completeOnboarding();
       
       toast({
@@ -201,7 +202,11 @@ export default function Onboarding() {
         description: "Your business is ready to go.",
       });
       
-      navigate("/");
+      // Add a small delay before navigation to ensure state updates properly
+      setTimeout(() => {
+        navigate("/");
+      }, 500);
+      
     } catch (error: any) {
       console.error("Onboarding error:", error);
       toast({
