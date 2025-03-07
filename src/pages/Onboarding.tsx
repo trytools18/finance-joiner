@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -267,7 +268,7 @@ export default function Onboarding() {
               <Label htmlFor="currency">Default Currency</Label>
               <Select
                 value={currency}
-                onValueChange={setCurrency}
+                onValueChange={(value: "USD" | "EUR" | "GBP") => setCurrency(value)}
               >
                 <SelectTrigger id="currency">
                   <SelectValue placeholder="Select currency" />
@@ -286,7 +287,7 @@ export default function Onboarding() {
               <Label htmlFor="paymentMethod">Default Payment Method</Label>
               <Select
                 value={defaultPaymentMethod}
-                onValueChange={setDefaultPaymentMethod}
+                onValueChange={(value: "cash" | "card" | "online") => setDefaultPaymentMethod(value)}
               >
                 <SelectTrigger id="paymentMethod">
                   <SelectValue placeholder="Select payment method" />
