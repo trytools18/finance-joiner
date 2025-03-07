@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowUpCircle, ArrowDownCircle, BarChart3 } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, BarChart3 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface VATSummary {
@@ -77,13 +77,12 @@ export function VATTracker({
       <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-4">
-            <div className="p-2 bg-green-100 rounded-full">
+            <div className="p-2 bg-green-100 rounded-lg">
               <ArrowUpCircle className="h-6 w-6 text-green-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">VAT Received</p>
               <h3 className="text-2xl font-bold">{formatCurrency(vatSummary?.vatReceived || 0, currencyCode)}</h3>
-              <p className="text-xs text-muted-foreground">Total VAT collected from completed sales</p>
             </div>
           </div>
         </CardContent>
@@ -92,13 +91,12 @@ export function VATTracker({
       <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-4">
-            <div className="p-2 bg-red-100 rounded-full">
+            <div className="p-2 bg-red-100 rounded-lg">
               <ArrowDownCircle className="h-6 w-6 text-red-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">VAT Paid (Clearable)</p>
               <h3 className="text-2xl font-bold">{formatCurrency(vatSummary?.vatPaid || 0, currencyCode)}</h3>
-              <p className="text-xs text-muted-foreground">Total clearable VAT paid on completed purchases</p>
             </div>
           </div>
         </CardContent>
@@ -107,13 +105,12 @@ export function VATTracker({
       <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-4">
-            <div className="p-2 bg-blue-100 rounded-full">
+            <div className="p-2 bg-blue-100 rounded-lg">
               <BarChart3 className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">VAT Balance</p>
               <h3 className="text-2xl font-bold">{formatCurrency(vatSummary?.vatBalance || 0, currencyCode)}</h3>
-              <p className="text-xs text-muted-foreground">Difference between VAT received and paid (completed transactions)</p>
             </div>
           </div>
         </CardContent>
