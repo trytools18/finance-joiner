@@ -24,6 +24,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   // If user is new and hasn't completed onboarding, redirect to onboarding
   if (isNewUser && !onboardingCompleted) {
+    console.log("Protected route: User is new and hasn't completed onboarding, redirecting");
     return <Navigate to="/onboarding" />;
   }
   
@@ -32,7 +33,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Routes component to use auth context
 const AppRoutes = () => {
-  const { user, isNewUser, onboardingCompleted } = useAuth();
+  const { user, isNewUser, onboardingCompleted, loading } = useAuth();
+  
+  console.log("AppRoutes rendering with user:", !!user, "isNewUser:", isNewUser, "onboardingCompleted:", onboardingCompleted);
+  
+  if (loading) return <div>Loading...</div>;
   
   return (
     <Routes>
@@ -49,8 +54,8 @@ const AppRoutes = () => {
         path="/onboarding" 
         element={
           user ? (
-            // Only allow access to onboarding if the user is new or hasn't completed onboarding
-            isNewUser || !onboardingCompleted ? (
+            // Show onboarding if the user hasn't completed it yet
+            !onboardingCompleted ? (
               <Onboarding />
             ) : (
               <Navigate to="/" />

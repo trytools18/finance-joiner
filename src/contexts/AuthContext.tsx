@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthState, User } from "@/lib/types/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,32 +48,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       setAuthState({
-        user: session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null,
+        user,
         loading: false,
       });
 
       // Check if there's a "new_user" flag in localStorage
       const newUserFlag = localStorage.getItem("new_user") === "true";
-      if (newUserFlag && session?.user) {
+      
+      // If user exists but onboarding not completed, they should be considered a new user
+      if (user && !localStorage.getItem("onboardingCompleted")) {
+        console.log("User exists but onboarding not completed, setting as new user");
         setIsNewUser(true);
-        // We'll remove the flag when onboarding is completed
+        // If we're not already on the onboarding page, redirect there
+        if (window.location.pathname !== "/onboarding") {
+          navigate("/onboarding");
+        }
       }
     });
 
     // Listen for changes on auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       setAuthState({
-        user: session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null,
+        user,
         loading: false,
       });
 
-      // If this is a sign-up event, mark as new user
-      if (_event === "SIGNED_IN" && !localStorage.getItem("onboardingCompleted")) {
-        const isFirstLogin = !localStorage.getItem("has_logged_in_before");
-        if (isFirstLogin) {
+      // If this is a sign-up or sign-in event
+      if (_event === "SIGNED_IN") {
+        console.log("Sign in event detected");
+        
+        // Check if onboarding has been completed
+        const onboardingComplete = localStorage.getItem("onboardingCompleted") === "true";
+        
+        if (!onboardingComplete) {
+          console.log("Onboarding not completed, setting as new user");
           localStorage.setItem("new_user", "true");
-          localStorage.setItem("has_logged_in_before", "true");
           setIsNewUser(true);
           
           // Redirect to onboarding
