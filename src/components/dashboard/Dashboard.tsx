@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import { Transaction } from "@/components/transactions/types";
-import { TrendingUp, BarChart3, Wallet, Eye, EyeOff } from "lucide-react";
+import { TrendingUp, BarChart3, Wallet, ChartPie, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/stats/StatCard";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
@@ -20,14 +20,14 @@ import { TransactionTrends } from "./graphs/TransactionTrends";
 import { ExpenseCategories } from "./graphs/ExpenseCategories";
 import { IncomeCategories } from "./graphs/IncomeCategories";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 export const Dashboard = () => {
-  const { toast } = useToast();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { parties, categories } = useTransactionData();
   const [realtimeTransactions, setRealtimeTransactions] = useState<Transaction[]>([]);
-  const [showCharts, setShowCharts] = useState(false);
+  const [showGraphs, setShowGraphs] = useState(false);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
@@ -59,6 +59,15 @@ export const Dashboard = () => {
     },
     enabled: !!user,
   });
+
+  const toggleGraphs = () => {
+    setShowGraphs(prev => !prev);
+    toast({
+      title: showGraphs ? "Charts hidden" : "Charts visible",
+      description: showGraphs ? "Charts have been hidden" : "Charts are now visible",
+      duration: 2000,
+    });
+  };
 
   // Set up real-time subscription for transactions
   useEffect(() => {
@@ -193,15 +202,6 @@ export const Dashboard = () => {
 
   const isLoading = isSettingsLoading || isTransactionsLoading;
 
-  const toggleCharts = () => {
-    setShowCharts(prev => !prev);
-    toast({
-      title: showCharts ? "Charts hidden" : "Charts visible",
-      description: showCharts ? "Transaction charts are now hidden" : "Transaction charts are now visible",
-      duration: 2000,
-    });
-  };
-
   if (isLoading) {
     return <DashboardLoading />;
   }
@@ -211,6 +211,14 @@ export const Dashboard = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={toggleGraphs}
+            title={showGraphs ? "Hide Charts" : "Show Charts"}
+          >
+            {showGraphs ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
           <NewTransactionDialog 
             defaultPaymentMethod={settings?.default_payment_method}
             defaultVatRate={settings?.default_vat_rate}
@@ -256,25 +264,13 @@ export const Dashboard = () => {
         />
       </div>
 
-      {/* VAT Tracker */}
+      {/* VAT Statistics - Replacing second card row with first card row */}
       <VATTracker currencyCode={settings?.default_currency} />
 
-      {/* Charts Toggle Button */}
-      <div className="flex justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={toggleCharts} 
-          className="flex items-center gap-2"
-        >
-          {showCharts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {showCharts ? "Hide Charts" : "Show Charts"}
-        </Button>
-      </div>
-
-      {/* Transaction Trend Graph */}
-      {showCharts && (
+      {/* Charts - Hidden by default */}
+      {showGraphs && (
         <>
+          {/* Transaction Trend Graph */}
           <div className="grid gap-4 md:grid-cols-3">
             <TransactionTrends 
               transactions={currentTransactions} 
@@ -300,8 +296,13 @@ export const Dashboard = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Recent Transactions</h2>
-          <Button variant="outline" size="icon">
-            <TrendingUp className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={toggleGraphs}
+            title={showGraphs ? "Hide Charts" : "Show Charts"}
+          >
+            {showGraphs ? <EyeOff className="h-4 w-4" /> : <ChartPie className="h-4 w-4" />}
           </Button>
         </div>
         <TransactionTable 
