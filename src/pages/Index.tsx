@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user, isNewUser, onboardingCompleted } = useAuth();
+  const { user, isNewUser, onboardingCompleted, loading } = useAuth();
   const navigate = useNavigate();
 
   // Redirect new users to onboarding if they haven't completed it
@@ -16,6 +16,13 @@ const Index = () => {
       navigate("/onboarding");
     }
   }, [user, isNewUser, onboardingCompleted, navigate]);
+
+  // Show landing page if no user is logged in
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>;
+  }
 
   if (!user) {
     return <LandingPage />;

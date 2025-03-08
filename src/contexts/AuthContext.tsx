@@ -72,19 +72,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log("AuthProvider: Initial setup");
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       console.log("Auth session check - User found:", !!user);
       
-      setAuthState({
-        user,
-        loading: false,
-      });
-
-      // If user exists, check their onboarding status in the database
       if (user) {
-        checkOnboardingStatus(user.id);
+        // If user exists, check their onboarding status in the database
+        checkOnboardingStatus(user.id).finally(() => {
+          setAuthState({
+            user,
+            loading: false,
+          });
+        });
+      } else {
+        setAuthState({
+          user: null,
+          loading: false,
+        });
       }
     });
 
@@ -93,32 +99,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Auth state change event:", _event);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       
-      setAuthState({
-        user,
-        loading: false,
-      });
-
       // If this is a sign-up or sign-in event
       if (_event === "SIGNED_IN") {
         console.log("Sign in event detected");
         
         if (user) {
+          setAuthState({
+            user,
+            loading: true,
+          });
+          
           // Check onboarding status directly from the database
           const onboardingComplete = await checkOnboardingStatus(user.id);
+          
+          setAuthState({
+            user,
+            loading: false,
+          });
           
           if (!onboardingComplete) {
             console.log("Onboarding not completed, redirecting to onboarding");
             navigate("/onboarding");
           }
         }
-      }
-      
-      // Handle SIGNED_OUT events
-      if (_event === "SIGNED_OUT") {
+      } else if (_event === "SIGNED_OUT") {
         console.log("User signed out, cleaning up state");
         setIsNewUser(false);
         setOnboardingCompleted(false);
-        // Don't clear localStorage values as they should persist
+        setAuthState({
+          user: null,
+          loading: false,
+        });
+      } else {
+        setAuthState({
+          user,
+          loading: false,
+        });
       }
     });
 

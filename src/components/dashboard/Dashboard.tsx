@@ -40,7 +40,10 @@ export const Dashboard = () => {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching organization settings:", error);
+        throw error;
+      }
       return data as OrganizationSettings;
     },
     enabled: !!user,
@@ -49,12 +52,17 @@ export const Dashboard = () => {
   const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
+      console.log("Fetching transactions...");
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching transactions:", error);
+        throw error;
+      }
+      console.log("Transactions fetched:", data?.length || 0);
       return data as Transaction[];
     },
     enabled: !!user,
