@@ -77,12 +77,13 @@ export function VATTracker({
       <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-4">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <ArrowUpCircle className="h-6 w-6 text-green-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <ArrowUpCircle className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">VAT Received</p>
               <h3 className="text-2xl font-bold">{formatCurrency(vatSummary?.vatReceived || 0, currencyCode)}</h3>
+              <p className="text-xs text-muted-foreground mt-1">Total VAT collected from completed sales</p>
             </div>
           </div>
         </CardContent>
@@ -91,12 +92,13 @@ export function VATTracker({
       <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-4">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <ArrowDownCircle className="h-6 w-6 text-red-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <ArrowDownCircle className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">VAT Paid (Clearable)</p>
+              <p className="text-sm font-medium text-muted-foreground">VAT Paid</p>
               <h3 className="text-2xl font-bold">{formatCurrency(vatSummary?.vatPaid || 0, currencyCode)}</h3>
+              <p className="text-xs text-muted-foreground mt-1">Total clearable VAT paid on completed purchases</p>
             </div>
           </div>
         </CardContent>
@@ -111,6 +113,7 @@ export function VATTracker({
             <div>
               <p className="text-sm font-medium text-muted-foreground">VAT Balance</p>
               <h3 className="text-2xl font-bold">{formatCurrency(vatSummary?.vatBalance || 0, currencyCode)}</h3>
+              <p className="text-xs text-muted-foreground mt-1">Difference between VAT received and paid (completed transactions)</p>
             </div>
           </div>
         </CardContent>

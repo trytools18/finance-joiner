@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import { Transaction } from "@/components/transactions/types";
-import { TrendingUp, BarChart3, Wallet, CreditCard } from "lucide-react";
+import { TrendingUp, BarChart3, Wallet, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/stats/StatCard";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
@@ -20,11 +20,14 @@ import { TransactionTrends } from "./graphs/TransactionTrends";
 import { ExpenseCategories } from "./graphs/ExpenseCategories";
 import { IncomeCategories } from "./graphs/IncomeCategories";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
+import { useToast } from "@/hooks/use-toast";
 
 export const Dashboard = () => {
+  const { toast } = useToast();
   const { user } = useAuth();
   const { parties, categories } = useTransactionData();
   const [realtimeTransactions, setRealtimeTransactions] = useState<Transaction[]>([]);
+  const [showCharts, setShowCharts] = useState(false);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
@@ -190,6 +193,15 @@ export const Dashboard = () => {
 
   const isLoading = isSettingsLoading || isTransactionsLoading;
 
+  const toggleCharts = () => {
+    setShowCharts(prev => !prev);
+    toast({
+      title: showCharts ? "Charts hidden" : "Charts visible",
+      description: showCharts ? "Transaction charts are now hidden" : "Transaction charts are now visible",
+      duration: 2000,
+    });
+  };
+
   if (isLoading) {
     return <DashboardLoading />;
   }
@@ -244,48 +256,46 @@ export const Dashboard = () => {
         />
       </div>
 
+      {/* VAT Tracker */}
+      <VATTracker currencyCode={settings?.default_currency} />
+
+      {/* Charts Toggle Button */}
+      <div className="flex justify-end">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={toggleCharts} 
+          className="flex items-center gap-2"
+        >
+          {showCharts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {showCharts ? "Hide Charts" : "Show Charts"}
+        </Button>
+      </div>
+
       {/* Transaction Trend Graph */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <TransactionTrends 
-          transactions={currentTransactions} 
-          dateRange={chartDateRange}
-          currencyCode={settings?.default_currency}
-        />
-      </div>
+      {showCharts && (
+        <>
+          <div className="grid gap-4 md:grid-cols-3">
+            <TransactionTrends 
+              transactions={currentTransactions} 
+              dateRange={chartDateRange}
+              currencyCode={settings?.default_currency}
+            />
+          </div>
 
-      {/* Category Distribution Graphs */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <ExpenseCategories 
-          transactions={filteredTransactions} 
-          currencyCode={settings?.default_currency}
-        />
-        <IncomeCategories 
-          transactions={filteredTransactions} 
-          currencyCode={settings?.default_currency}
-        />
-      </div>
-
-      {/* VAT Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
-       <StatCard
-          title="VAT Received"
-          value={formatAmount(stats.vatReceived)}
-          icon={CreditCard}
-          description="Total VAT collected from completed sales"
-        />
-        <StatCard
-          title="VAT Paid"
-          value={formatAmount(stats.vatPaid)}
-          icon={CreditCard}
-          description="Total clearable VAT paid on completed purchases"
-        />
-        <StatCard
-          title="VAT Balance"
-          value={formatAmount(stats.vatBalance)}
-          icon={CreditCard}
-          description="Difference between VAT received and paid (completed transactions)"
-        />
-      </div>
+          {/* Category Distribution Graphs */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <ExpenseCategories 
+              transactions={filteredTransactions} 
+              currencyCode={settings?.default_currency}
+            />
+            <IncomeCategories 
+              transactions={filteredTransactions} 
+              currencyCode={settings?.default_currency}
+            />
+          </div>
+        </>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
