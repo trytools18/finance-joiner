@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthState, User } from "@/lib/types/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,14 +37,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check if onboarding is completed in localStorage
-  useEffect(() => {
-    const onboardingStatus = localStorage.getItem("onboardingCompleted");
-    console.log("Initial onboardingStatus from localStorage:", onboardingStatus);
-    if (onboardingStatus === "true") {
-      setOnboardingCompleted(true);
+  // Check if user has completed onboarding in the database
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      console.log("Checking onboarding status for user:", userId);
+      const { data, error } = await supabase
+        .from("organization_settings")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking onboarding status:", error);
+        return false;
+      }
+
+      // If we found organization settings, the user has completed onboarding
+      const completed = !!data;
+      console.log("Onboarding completed from DB check:", completed);
+      
+      if (completed) {
+        setOnboardingCompleted(true);
+        localStorage.setItem("onboardingCompleted", "true");
+      } else {
+        setIsNewUser(true);
+        localStorage.setItem("new_user", "true");
+      }
+      
+      return completed;
+    } catch (err) {
+      console.error("Error in checkOnboardingStatus:", err);
+      return false;
     }
-  }, []);
+  };
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -56,24 +82,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading: false,
       });
 
-      // Check if there's a "new_user" flag in localStorage
-      const newUserFlag = localStorage.getItem("new_user") === "true";
-      console.log("New user flag in localStorage:", newUserFlag);
-      
-      // If user exists but onboarding not completed, they should be considered a new user
-      if (user && !localStorage.getItem("onboardingCompleted")) {
-        console.log("User exists but onboarding not completed, setting as new user");
-        setIsNewUser(true);
-        // If we're not already on the onboarding page, redirect there
-        if (window.location.pathname !== "/onboarding") {
-          console.log("Redirecting to onboarding from session check");
-          navigate("/onboarding");
-        }
+      // If user exists, check their onboarding status in the database
+      if (user) {
+        checkOnboardingStatus(user.id);
       }
     });
 
     // Listen for changes on auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Auth state change event:", _event);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       
@@ -86,25 +102,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (_event === "SIGNED_IN") {
         console.log("Sign in event detected");
         
-        // Check if onboarding has been completed
-        const onboardingComplete = localStorage.getItem("onboardingCompleted") === "true";
-        console.log("Onboarding completed status:", onboardingComplete);
-        
-        if (!onboardingComplete) {
-          console.log("Onboarding not completed, setting as new user");
-          localStorage.setItem("new_user", "true");
-          setIsNewUser(true);
+        if (user) {
+          // Check onboarding status directly from the database
+          const onboardingComplete = await checkOnboardingStatus(user.id);
           
-          // Redirect to onboarding
-          console.log("Redirecting to onboarding from auth change");
-          navigate("/onboarding");
+          if (!onboardingComplete) {
+            console.log("Onboarding not completed, redirecting to onboarding");
+            navigate("/onboarding");
+          }
         }
       }
       
       // Handle SIGNED_OUT events
       if (_event === "SIGNED_OUT") {
         console.log("User signed out, cleaning up state");
-        // Keep the onboardingCompleted value in localStorage
+        setIsNewUser(false);
+        setOnboardingCompleted(false);
+        // Don't clear localStorage values as they should persist
       }
     });
 
@@ -189,7 +203,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const completeOnboarding = () => {
+  const completeOnboarding = async () => {
     console.log("Marking onboarding as completed");
     localStorage.setItem("onboardingCompleted", "true");
     localStorage.removeItem("new_user");

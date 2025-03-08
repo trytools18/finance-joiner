@@ -17,11 +17,16 @@ const Index = () => {
     }
   }, [user, isNewUser, onboardingCompleted, navigate]);
 
-  if (user) {
-    return <Dashboard />;
+  if (!user) {
+    return <LandingPage />;
   }
 
-  return <LandingPage />;
+  if (isNewUser && !onboardingCompleted) {
+    navigate("/onboarding");
+    return null;
+  }
+
+  return <Dashboard />;
 };
 
 export default Index;

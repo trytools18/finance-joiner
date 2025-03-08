@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -100,58 +99,28 @@ export default function Onboarding() {
     try {
       console.log("Starting onboarding submission for user:", user.id);
       
-      // Check if user already has organization settings
-      const { data: existingSettings, error: fetchError } = await supabase
-        .from("organization_settings")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error("Error checking existing settings:", fetchError);
-        throw fetchError;
-      }
-
-      console.log("Existing settings check:", existingSettings);
-
       // Cast the vat_rates array to Json type for Supabase
       const vatRatesJson = defaultVatRates as unknown as Json;
       
-      if (existingSettings) {
-        console.log("Updating existing settings with ID:", existingSettings.id);
-        // Update existing settings
-        const { error: updateError } = await supabase
-          .from("organization_settings")
-          .update({
-            default_currency: currency,
-            default_payment_method: defaultPaymentMethod,
-            default_vat_rate: defaultVatRate,
-            vat_rates: vatRatesJson,
-          })
-          .eq("id", existingSettings.id);
+      // Insert organization settings data
+      console.log("Inserting organization settings...");
+      const { data: settingsData, error: settingsError } = await supabase
+        .from("organization_settings")
+        .upsert({
+          user_id: user.id,
+          default_currency: currency,
+          default_payment_method: defaultPaymentMethod,
+          default_vat_rate: defaultVatRate,
+          vat_rates: vatRatesJson,
+        }, { onConflict: 'user_id' })
+        .select();
 
-        if (updateError) {
-          console.error("Error updating settings:", updateError);
-          throw updateError;
-        }
-      } else {
-        console.log("Inserting new settings for user:", user.id);
-        // Insert new settings
-        const { error: insertError } = await supabase
-          .from("organization_settings")
-          .insert({
-            user_id: user.id,
-            default_currency: currency,
-            default_payment_method: defaultPaymentMethod,
-            default_vat_rate: defaultVatRate,
-            vat_rates: vatRatesJson,
-          });
-
-        if (insertError) {
-          console.error("Error inserting settings:", insertError);
-          throw insertError;
-        }
+      if (settingsError) {
+        console.error("Error inserting settings:", settingsError);
+        throw settingsError;
       }
+      
+      console.log("Settings saved successfully:", settingsData);
 
       // Insert transaction parties if any
       if (partyList.length > 0) {
@@ -171,6 +140,8 @@ export default function Onboarding() {
           console.error("Error adding parties:", partiesError);
           throw partiesError;
         }
+        
+        console.log("Transaction parties saved successfully");
       }
 
       // Insert transaction categories if any
@@ -190,12 +161,14 @@ export default function Onboarding() {
           console.error("Error adding categories:", categoriesError);
           throw categoriesError;
         }
+        
+        console.log("Transaction categories saved successfully");
       }
 
       console.log("Onboarding data saved successfully, now completing onboarding");
       
-      // Mark onboarding as complete BEFORE showing the toast
-      completeOnboarding();
+      // Mark onboarding as complete AFTER successful data save
+      await completeOnboarding();
       
       toast({
         title: "Setup complete!",

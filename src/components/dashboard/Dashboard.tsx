@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import { Transaction } from "@/components/transactions/types";
-import { TrendingUp, BarChart3, Wallet, CreditCard } from "lucide-react";
+import { TrendingUp, BarChart3, Wallet, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/stats/StatCard";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
@@ -19,12 +19,15 @@ import { TransactionFilters } from "../transactions/filters/TransactionFilters";
 import { TransactionTrends } from "./graphs/TransactionTrends";
 import { ExpenseCategories } from "./graphs/ExpenseCategories";
 import { IncomeCategories } from "./graphs/IncomeCategories";
+import { useToast } from "@/components/ui/use-toast";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
 
 export const Dashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { parties, categories } = useTransactionData();
   const [realtimeTransactions, setRealtimeTransactions] = useState<Transaction[]>([]);
+  const [showGraphs, setShowGraphs] = useState(false);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
@@ -152,22 +155,10 @@ export const Dashboard = () => {
         }
       }, 0);
 
-    // Calculate VAT statistics
-    const vatReceived = completedTransactions
-      .filter(t => t.type === "income")
-      .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
-
-    const vatPaid = completedTransactions
-      .filter(t => t.type === "expense" && t.vat_clearable === true)
-      .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
-
     return {
       balance: totalIncome - totalExpenses,
       income: totalIncome,
-      expenses: totalExpenses,
-      vatReceived,
-      vatPaid,
-      vatBalance: vatReceived - vatPaid
+      expenses: totalExpenses
     };
   }, [filteredTransactions]);
 
@@ -189,6 +180,14 @@ export const Dashboard = () => {
   }, [dateRange]);
 
   const isLoading = isSettingsLoading || isTransactionsLoading;
+
+  const toggleGraphsVisibility = () => {
+    setShowGraphs(prev => !prev);
+    toast({
+      title: showGraphs ? "Graphs hidden" : "Graphs shown",
+      description: showGraphs ? "The graphs have been hidden." : "The graphs are now visible.",
+    });
+  };
 
   if (isLoading) {
     return <DashboardLoading />;
@@ -244,55 +243,51 @@ export const Dashboard = () => {
         />
       </div>
 
-      {/* Transaction Trend Graph */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <TransactionTrends 
-          transactions={currentTransactions} 
-          dateRange={chartDateRange}
-          currencyCode={settings?.default_currency}
-        />
+      {/* VAT Tracker */}
+      <VATTracker currencyCode={settings?.default_currency} />
+      
+      {/* Toggle Graphs Button */}
+      <div className="flex justify-end">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={toggleGraphsVisibility}
+          className="flex items-center gap-2"
+        >
+          {showGraphs ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {showGraphs ? "Hide Graphs" : "Show Graphs"}
+        </Button>
       </div>
 
-      {/* Category Distribution Graphs */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <ExpenseCategories 
-          transactions={filteredTransactions} 
-          currencyCode={settings?.default_currency}
-        />
-        <IncomeCategories 
-          transactions={filteredTransactions} 
-          currencyCode={settings?.default_currency}
-        />
-      </div>
+      {/* Graphs Section - Only shown when showGraphs is true */}
+      {showGraphs && (
+        <>
+          {/* Transaction Trend Graph */}
+          <div className="grid gap-4 md:grid-cols-1">
+            <TransactionTrends 
+              transactions={currentTransactions} 
+              dateRange={chartDateRange}
+              currencyCode={settings?.default_currency}
+            />
+          </div>
 
-      {/* VAT Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
-       <StatCard
-          title="VAT Received"
-          value={formatAmount(stats.vatReceived)}
-          icon={CreditCard}
-          description="Total VAT collected from completed sales"
-        />
-        <StatCard
-          title="VAT Paid"
-          value={formatAmount(stats.vatPaid)}
-          icon={CreditCard}
-          description="Total clearable VAT paid on completed purchases"
-        />
-        <StatCard
-          title="VAT Balance"
-          value={formatAmount(stats.vatBalance)}
-          icon={CreditCard}
-          description="Difference between VAT received and paid (completed transactions)"
-        />
-      </div>
+          {/* Category Distribution Graphs */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <ExpenseCategories 
+              transactions={filteredTransactions} 
+              currencyCode={settings?.default_currency}
+            />
+            <IncomeCategories 
+              transactions={filteredTransactions} 
+              currencyCode={settings?.default_currency}
+            />
+          </div>
+        </>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Recent Transactions</h2>
-          <Button variant="outline" size="icon">
-            <TrendingUp className="h-4 w-4" />
-          </Button>
         </div>
         <TransactionTable 
           transactions={filteredTransactions} 
