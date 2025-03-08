@@ -1,11 +1,10 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import { Transaction } from "@/components/transactions/types";
-import { TrendingUp, BarChart3, Wallet, Eye, EyeOff } from "lucide-react";
+import { TrendingUp, BarChart3, Wallet, CreditCard, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/stats/StatCard";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
@@ -19,7 +18,7 @@ import { TransactionFilters } from "../transactions/filters/TransactionFilters";
 import { TransactionTrends } from "./graphs/TransactionTrends";
 import { ExpenseCategories } from "./graphs/ExpenseCategories";
 import { IncomeCategories } from "./graphs/IncomeCategories";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
 
 export const Dashboard = () => {
@@ -40,10 +39,7 @@ export const Dashboard = () => {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching organization settings:", error);
-        throw error;
-      }
+      if (error) throw error;
       return data as OrganizationSettings;
     },
     enabled: !!user,
@@ -52,17 +48,12 @@ export const Dashboard = () => {
   const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
-      console.log("Fetching transactions...");
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
         .order("date", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching transactions:", error);
-        throw error;
-      }
-      console.log("Transactions fetched:", data?.length || 0);
+      if (error) throw error;
       return data as Transaction[];
     },
     enabled: !!user,
@@ -163,10 +154,22 @@ export const Dashboard = () => {
         }
       }, 0);
 
+    // Calculate VAT statistics
+    const vatReceived = completedTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
+
+    const vatPaid = completedTransactions
+      .filter(t => t.type === "expense" && t.vat_clearable === true)
+      .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
+
     return {
       balance: totalIncome - totalExpenses,
       income: totalIncome,
-      expenses: totalExpenses
+      expenses: totalExpenses,
+      vatReceived,
+      vatPaid,
+      vatBalance: vatReceived - vatPaid
     };
   }, [filteredTransactions]);
 
@@ -187,15 +190,16 @@ export const Dashboard = () => {
     return { start, end };
   }, [dateRange]);
 
-  const isLoading = isSettingsLoading || isTransactionsLoading;
-
-  const toggleGraphsVisibility = () => {
+  const toggleGraphs = () => {
     setShowGraphs(prev => !prev);
     toast({
-      title: showGraphs ? "Graphs hidden" : "Graphs shown",
-      description: showGraphs ? "The graphs have been hidden." : "The graphs are now visible.",
+      title: showGraphs ? "Charts hidden" : "Charts visible",
+      description: showGraphs ? "Transaction charts are now hidden" : "Transaction charts are now visible",
+      duration: 2000,
     });
   };
+
+  const isLoading = isSettingsLoading || isTransactionsLoading;
 
   if (isLoading) {
     return <DashboardLoading />;
@@ -252,26 +256,27 @@ export const Dashboard = () => {
       </div>
 
       {/* VAT Tracker */}
-      <VATTracker currencyCode={settings?.default_currency} />
-      
-      {/* Toggle Graphs Button */}
+      <VATTracker 
+        currencyCode={settings?.default_currency}
+      />
+
+      {/* Toggle button for graphs */}
       <div className="flex justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={toggleGraphsVisibility}
+        <Button
+          variant="outline"
+          onClick={toggleGraphs}
           className="flex items-center gap-2"
         >
-          {showGraphs ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {showGraphs ? "Hide Graphs" : "Show Graphs"}
+          <Eye className="h-4 w-4" />
+          {showGraphs ? "Hide Charts" : "Show Charts"}
         </Button>
       </div>
 
-      {/* Graphs Section - Only shown when showGraphs is true */}
+      {/* Graphs - only shown when showGraphs is true */}
       {showGraphs && (
         <>
           {/* Transaction Trend Graph */}
-          <div className="grid gap-4 md:grid-cols-1">
+          <div className="grid gap-4 md:grid-cols-3">
             <TransactionTrends 
               transactions={currentTransactions} 
               dateRange={chartDateRange}
@@ -296,6 +301,9 @@ export const Dashboard = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Recent Transactions</h2>
+          <Button variant="outline" size="icon">
+            <TrendingUp className="h-4 w-4" />
+          </Button>
         </div>
         <TransactionTable 
           transactions={filteredTransactions} 
