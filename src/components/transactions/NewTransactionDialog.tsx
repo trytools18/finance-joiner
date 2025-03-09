@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,15 @@ export function NewTransactionDialog({
   // Use the controlled open state if provided, otherwise use internal state
   const dialogOpen = isOpen !== undefined ? isOpen : open;
   const setDialogOpen = setIsOpen || setOpen;
+
+  // Set date if we're editing a transaction
+  useEffect(() => {
+    if (transactionToEdit && transactionToEdit.date) {
+      setDate(new Date(transactionToEdit.date));
+    } else {
+      setDate(new Date());
+    }
+  }, [transactionToEdit]);
 
   const { data: parties = [] } = useQuery({
     queryKey: ["transaction-parties"],
@@ -89,28 +98,48 @@ export function NewTransactionDialog({
       total_amount: totalAmount
     };
 
-    const { error } = await supabase
-      .from("transactions")
-      .insert(transaction);
+    if (transactionToEdit) {
+      // Update existing transaction
+      const { error } = await supabase
+        .from("transactions")
+        .update(transaction)
+        .eq("id", transactionToEdit.id);
 
-    if (!error) {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      setDialogOpen(false);
-      if (onClose) onClose();
+      if (!error) {
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        setDialogOpen(false);
+        if (onClose) onClose();
+      }
+    } else {
+      // Create new transaction
+      const { error } = await supabase
+        .from("transactions")
+        .insert(transaction);
+
+      if (!error) {
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        setDialogOpen(false);
+        if (onClose) onClose();
+      }
     }
   };
 
+  // Only render the trigger when we're not in edit mode
+  const dialogTrigger = !transactionToEdit ? (
+    <DialogTrigger asChild>
+      <Button>
+        <Plus className="h-4 w-4 mr-2" />
+        New Transaction
+      </Button>
+    </DialogTrigger>
+  ) : null;
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Transaction
-        </Button>
-      </DialogTrigger>
+      {dialogTrigger}
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Transaction</DialogTitle>
+          <DialogTitle>{transactionToEdit ? "Edit Transaction" : "New Transaction"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <TransactionFormFields

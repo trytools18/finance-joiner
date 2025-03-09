@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableRow } from "@/components/ui/table";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
@@ -260,20 +259,15 @@ export const TransactionTable = ({
   return (
     <div className="space-y-4">
       {/* Edit Transaction Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Edit Transaction</DialogTitle>
-          </DialogHeader>
-          <NewTransactionDialog 
-            isOpen={showEditDialog}
-            setIsOpen={setShowEditDialog}
-            transactionToEdit={editTransaction} 
-            onClose={closeEditDialog}
-            currencyCode={currencyCode}
-          />
-        </DialogContent>
-      </Dialog>
+      {showEditDialog && (
+        <NewTransactionDialog 
+          isOpen={showEditDialog}
+          setIsOpen={setShowEditDialog}
+          transactionToEdit={editTransaction} 
+          onClose={closeEditDialog}
+          currencyCode={currencyCode}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

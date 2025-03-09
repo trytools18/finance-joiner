@@ -1,3 +1,4 @@
+
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
@@ -39,8 +40,52 @@ export function TransactionFormFields({
   const [isVatClearable, setIsVatClearable] = useState<boolean>(true);
   const [netAmount, setNetAmount] = useState<string>('');
   const [vatAmount, setVatAmount] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedParty, setSelectedParty] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(defaultPaymentMethod);
 
   const filteredCategories = categories.filter(category => category.type === selectedType);
+
+  // Initialize form with transaction data if editing
+  useEffect(() => {
+    if (transaction) {
+      // Find the category to determine the transaction type
+      const category = categories.find(c => c.id === transaction.category_id);
+      if (category) {
+        setSelectedType(category.type);
+        setSelectedCategory(category.id);
+      }
+      
+      // Set party
+      if (transaction.party) {
+        setSelectedParty(transaction.party);
+      }
+      
+      // Set amounts
+      const total = transaction.total_amount ? transaction.total_amount.toString() : 
+                    transaction.amount.toString();
+      setTotalAmount(total);
+      
+      // Set VAT
+      if (transaction.vat !== undefined && transaction.vat !== null) {
+        setVatRate(transaction.vat.toString());
+      }
+      
+      // Set VAT clearable
+      if (transaction.vat_clearable !== undefined) {
+        setIsVatClearable(transaction.vat_clearable);
+      }
+      
+      // Set description
+      if (transaction.description) {
+        setDescription(transaction.description);
+      }
+      
+      // Set payment method
+      setPaymentMethod(transaction.payment_method);
+    }
+  }, [transaction, categories]);
 
   // Calculate net amount and VAT whenever totalAmount or vatRate changes
   useEffect(() => {
@@ -89,7 +134,12 @@ export function TransactionFormFields({
 
       <div className="space-y-2">
         <Label>Category</Label>
-        <Select name="category" required>
+        <Select 
+          name="category" 
+          value={selectedCategory}
+          onValueChange={setSelectedCategory}
+          required
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
@@ -109,12 +159,19 @@ export function TransactionFormFields({
           name="description" 
           placeholder="Add a description (optional)"
           className="resize-none"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
         <Label>Transaction Party</Label>
-        <Select name="party" required>
+        <Select 
+          name="party" 
+          value={selectedParty}
+          onValueChange={setSelectedParty}
+          required
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select a party" />
           </SelectTrigger>
@@ -147,7 +204,6 @@ export function TransactionFormFields({
           name="vat" 
           value={vatRate}
           onValueChange={setVatRate}
-          defaultValue={defaultVatRate.toString()}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select VAT rate" />
@@ -227,7 +283,11 @@ export function TransactionFormFields({
 
       <div className="space-y-2">
         <Label>Payment Method</Label>
-        <Select name="payment_method" defaultValue={defaultPaymentMethod}>
+        <Select 
+          name="payment_method" 
+          value={paymentMethod}
+          onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select payment method" />
           </SelectTrigger>
