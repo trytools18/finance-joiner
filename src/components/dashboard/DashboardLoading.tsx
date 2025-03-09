@@ -1,7 +1,7 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton } from "@/components/ui/skeleton";
-import { CreditCard, TrendingUp, BarChart3, Wallet } from "lucide-react";
+import { TrendingUp, BarChart3, Wallet } from "lucide-react";
 
 export const DashboardLoading = () => {
   return (
@@ -21,12 +21,7 @@ export const DashboardLoading = () => {
         <StatCardSkeleton icon={Wallet} title="Balance" />
       </div>
 
-      {/* VAT Statistics Loading */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCardSkeleton icon={CreditCard} title="VAT Received" />
-        <StatCardSkeleton icon={CreditCard} title="VAT Paid" />
-        <StatCardSkeleton icon={CreditCard} title="VAT Balance" />
-      </div>
+      {/* VAT Statistics Loading section removed */}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
