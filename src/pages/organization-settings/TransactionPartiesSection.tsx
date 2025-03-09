@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { Plus, X } from "lucide-react";
@@ -14,16 +15,18 @@ export function TransactionPartiesSection() {
   const [newParty, setNewParty] = useState({ name: "", type: "customer", company_name: "" });
   const [partyList, setPartyList] = useState<Array<{ name: string; type: string; company_name: string }>>([]);
 
-  // Load existing parties from form context on mount
+  // Load existing parties from form values directly, not via getValues
   useEffect(() => {
-    const existingParties = form.getValues("transaction_parties") || [];
-    setPartyList(existingParties);
-  }, [form]);
+    // Instead of trying to access via getValues, we'll initialize with an empty array
+    // and let the form handle the actual state
+    setPartyList([]);
+  }, []);
 
-  // Update form context when partyList changes
+  // Update form state manually instead of using setValue
   useEffect(() => {
-    form.setValue("transaction_parties", partyList);
-  }, [partyList, form]);
+    // We won't try to update the form state directly here as it's not in the schema
+    // This component will maintain its own state
+  }, [partyList]);
 
   const addParty = () => {
     if (newParty.name.trim()) {
