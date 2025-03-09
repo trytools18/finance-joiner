@@ -12,17 +12,20 @@ import { useTransactionFilters } from "../transactions/hooks/useTransactionFilte
 import { useTransactionData } from "../transactions/hooks/useTransactionData";
 import { TransactionFilters } from "../transactions/filters/TransactionFilters";
 import { FinancialStatsCards } from "./stats/FinancialStatsCards";
-import { VATStatsCards } from "./stats/VATStatsCards";
 import { ChartsSection } from "./sections/ChartsSection";
 import { TransactionsSection } from "./sections/TransactionsSection";
 import { useTransactionStats } from "./hooks/useTransactionStats";
 import { useRealtimeTransactions } from "./hooks/useRealtimeTransactions";
+import { RecurringTransactionDialog } from "../transactions/RecurringTransactionDialog";
+import { CalendarDays } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
 import type { Transaction } from "../transactions/types";
 
 export const Dashboard = () => {
   const { user } = useAuth();
   const { parties, categories } = useTransactionData();
+  const navigate = useNavigate();
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
@@ -108,6 +111,20 @@ export const Dashboard = () => {
             vatRates={settings?.vat_rates as number[]}
             defaultCurrency={settings?.default_currency}
           />
+          <RecurringTransactionDialog 
+            defaultPaymentMethod={settings?.default_payment_method}
+            defaultVatRate={settings?.default_vat_rate}
+            vatRates={settings?.vat_rates as number[]}
+            defaultCurrency={settings?.default_currency}
+          />
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/recurring-transactions')}
+            className="ml-2"
+          >
+            <CalendarDays className="h-4 w-4 mr-2" />
+            Manage Recurring
+          </Button>
           <ProfileMenu />
         </div>
       </div>
@@ -137,14 +154,6 @@ export const Dashboard = () => {
         transactions={currentTransactions}
         filteredTransactions={filteredTransactions}
         dateRange={dateRange}
-        currencyCode={settings?.default_currency || 'USD'}
-      />
-
-      {/* VAT Stats */}
-      <VATStatsCards
-        vatReceived={stats.vatReceived}
-        vatPaid={stats.vatPaid}
-        vatBalance={stats.vatBalance}
         currencyCode={settings?.default_currency || 'USD'}
       />
 

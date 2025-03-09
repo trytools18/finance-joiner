@@ -1,6 +1,9 @@
+
 export type TransactionCategory = "income" | "expense" | "transfer";
 export type PaymentMethod = "cash" | "card" | "online";
 export type TransactionStatus = "completed" | "pending" | "cancelled";
+export type RecurrenceType = "daily" | "weekly" | "monthly" | "yearly";
+export type RecurringTransactionStatus = "active" | "paused" | "completed";
 
 export interface TransactionParty {
   id: string;
@@ -41,6 +44,7 @@ export interface TransactionFormData {
   status: TransactionStatus;
   user_id: string;
   description: string | null;
+  recurring_transaction_id?: string | null;
 }
 
 export interface Transaction {
@@ -57,6 +61,30 @@ export interface Transaction {
   payment_method: PaymentMethod;
   category_id?: string;
   description?: string | null;
+  recurring_transaction_id?: string | null;
+}
+
+export interface RecurringTransaction {
+  id: string;
+  name: string;
+  type: TransactionCategory;
+  category_id: string;
+  amount: number;
+  vat: number;
+  vat_amount: number;
+  vat_clearable: boolean;
+  total_amount: number;
+  party: string | null;
+  payment_method: PaymentMethod;
+  description: string | null;
+  recurrence_type: RecurrenceType;
+  interval: number;
+  start_date: string;
+  end_date?: string | null;
+  user_id: string;
+  status: RecurringTransactionStatus;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Column {
