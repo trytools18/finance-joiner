@@ -45,6 +45,7 @@ export function TransactionFormFields({
   const [description, setDescription] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(defaultPaymentMethod);
 
+  // Filter categories based on selected type
   const filteredCategories = categories.filter(category => category.type === selectedType);
 
   // Initialize form with transaction data if editing
@@ -53,8 +54,14 @@ export function TransactionFormFields({
       // Find the category to determine the transaction type
       const category = categories.find(c => c.id === transaction.category_id);
       if (category) {
+        // First set the transaction type
         setSelectedType(category.type);
-        setSelectedCategory(category.id);
+        
+        // Then set the category ID
+        // Important: We need to set this after the type is set to ensure the filtered categories include this category
+        setTimeout(() => {
+          setSelectedCategory(category.id);
+        }, 0);
       }
       
       // Set party
@@ -63,8 +70,9 @@ export function TransactionFormFields({
       }
       
       // Set amounts
-      const total = transaction.total_amount ? transaction.total_amount.toString() : 
-                    transaction.amount.toString();
+      const total = transaction.total_amount 
+        ? transaction.total_amount.toString() 
+        : transaction.amount.toString();
       setTotalAmount(total);
       
       // Set VAT
