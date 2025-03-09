@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableRow } from "@/components/ui/table";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
@@ -16,6 +15,7 @@ import { ChevronDown, ChevronUp, Filter, ListChecks } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
+import { VATTracker } from "./VATTracker";
 import { SelectedTransactionsToolbar } from "./table/SelectedTransactionsToolbar";
 import { DragEndEvent, MouseSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
@@ -287,7 +287,7 @@ export const TransactionTable = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Removed the VATTracker component that was here */}
+      <VATTracker currencyCode={currencyCode} className="mb-6" />
 
       <SelectedTransactionsToolbar 
         selectedTransactions={selectedTransactions}

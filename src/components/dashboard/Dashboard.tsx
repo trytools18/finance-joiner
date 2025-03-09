@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,7 @@ import { useTransactionFilters } from "../transactions/hooks/useTransactionFilte
 import { useTransactionData } from "../transactions/hooks/useTransactionData";
 import { TransactionFilters } from "../transactions/filters/TransactionFilters";
 import { FinancialStatsCards } from "./stats/FinancialStatsCards";
+import { VATStatsCards } from "./stats/VATStatsCards";
 import { ChartsSection } from "./sections/ChartsSection";
 import { TransactionsSection } from "./sections/TransactionsSection";
 import { useTransactionStats } from "./hooks/useTransactionStats";
@@ -135,6 +137,14 @@ export const Dashboard = () => {
         transactions={currentTransactions}
         filteredTransactions={filteredTransactions}
         dateRange={dateRange}
+        currencyCode={settings?.default_currency || 'USD'}
+      />
+
+      {/* VAT Stats */}
+      <VATStatsCards
+        vatReceived={stats.vatReceived}
+        vatPaid={stats.vatPaid}
+        vatBalance={stats.vatBalance}
         currencyCode={settings?.default_currency || 'USD'}
       />
 
