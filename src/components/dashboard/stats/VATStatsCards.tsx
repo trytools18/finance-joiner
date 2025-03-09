@@ -7,7 +7,7 @@ interface VATStatsProps {
   vatReceived: number;
   vatPaid: number;
   vatBalance: number;
-  currencyCode: string;
+  currencyCode: "USD" | "EUR" | "GBP";
 }
 
 export function VATStatsCards({ 
@@ -17,7 +17,7 @@ export function VATStatsCards({
   currencyCode 
 }: VATStatsProps) {
   const formatAmount = (amount: number) => {
-    return formatCurrency(amount, currencyCode);
+    return formatCurrency(amount, currencyCode as "USD" | "EUR" | "GBP");
   };
 
   return (

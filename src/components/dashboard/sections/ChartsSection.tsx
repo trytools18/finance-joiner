@@ -7,13 +7,13 @@ import { Transaction } from "@/components/transactions/types";
 import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChartsSectionProps {
   transactions: Transaction[];
   filteredTransactions: Transaction[];
   dateRange: DateRange | undefined;
-  currencyCode: string;
+  currencyCode: "USD" | "EUR" | "GBP";
 }
 
 export function ChartsSection({
@@ -73,7 +73,7 @@ export function ChartsSection({
             <TransactionTrends 
               transactions={transactions} 
               dateRange={chartDateRange}
-              currencyCode={currencyCode}
+              currencyCode={currencyCode as "USD" | "EUR" | "GBP"}
             />
           </div>
 
@@ -81,11 +81,11 @@ export function ChartsSection({
           <div className="grid gap-4 md:grid-cols-2">
             <ExpenseCategories 
               transactions={filteredTransactions} 
-              currencyCode={currencyCode}
+              currencyCode={currencyCode as "USD" | "EUR" | "GBP"}
             />
             <IncomeCategories 
               transactions={filteredTransactions} 
-              currencyCode={currencyCode}
+              currencyCode={currencyCode as "USD" | "EUR" | "GBP"}
             />
           </div>
         </>

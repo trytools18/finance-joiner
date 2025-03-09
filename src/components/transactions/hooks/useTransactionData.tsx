@@ -1,8 +1,7 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TransactionParty, Category, Transaction, TransactionStatus } from "../types";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export const useTransactionData = () => {
   const queryClient = useQueryClient();

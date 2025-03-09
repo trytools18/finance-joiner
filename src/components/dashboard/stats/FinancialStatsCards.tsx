@@ -7,7 +7,7 @@ interface FinancialStatsProps {
   income: number;
   expenses: number;
   balance: number;
-  currencyCode: string;
+  currencyCode: "USD" | "EUR" | "GBP";
 }
 
 export function FinancialStatsCards({
@@ -17,7 +17,7 @@ export function FinancialStatsCards({
   currencyCode
 }: FinancialStatsProps) {
   const formatAmount = (amount: number) => {
-    return formatCurrency(amount, currencyCode);
+    return formatCurrency(amount, currencyCode as "USD" | "EUR" | "GBP");
   };
 
   return (

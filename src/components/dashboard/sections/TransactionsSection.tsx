@@ -6,7 +6,7 @@ import { Transaction } from "@/components/transactions/types";
 
 interface TransactionsSectionProps {
   filteredTransactions: Transaction[];
-  currencyCode: string;
+  currencyCode: "USD" | "EUR" | "GBP";
 }
 
 export function TransactionsSection({
@@ -23,7 +23,7 @@ export function TransactionsSection({
       </div>
       <TransactionTable 
         transactions={filteredTransactions} 
-        currencyCode={currencyCode}
+        currencyCode={currencyCode as "USD" | "EUR" | "GBP"}
       />
     </div>
   );
