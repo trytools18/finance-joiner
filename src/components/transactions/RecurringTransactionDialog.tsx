@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TransactionFormFields } from "./TransactionFormFields";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TransactionParty, Category, PaymentMethod, Transaction } from "./types";
+import { TransactionParty, Category, PaymentMethod, Transaction, TransactionStatus, RecurrenceType } from "./types";
 
 export function RecurringTransactionDialog({
   defaultPaymentMethod = "online",
@@ -22,7 +22,7 @@ export function RecurringTransactionDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
-  const [recurrenceType, setRecurrenceType] = useState<string>("monthly");
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
   const [intervalValue, setIntervalValue] = useState<string>("1");
   const [occurrences, setOccurrences] = useState<string>("12");
   const [parties, setParties] = useState<TransactionParty[]>([]);
@@ -166,7 +166,7 @@ export function RecurringTransactionDialog({
           total_amount: totalAmount,
           party: formData.get("party")?.toString() || null,
           payment_method: formData.get("payment_method") as PaymentMethod,
-          status: "pending", // Default status for recurring transactions
+          status: "pending" as TransactionStatus,
           user_id: user.id,
           description: formData.get("description")?.toString() || null,
           recurring_transaction_id: recurringData?.[0]?.id || null
@@ -227,7 +227,7 @@ export function RecurringTransactionDialog({
             <Select 
               name="recurrence_type" 
               value={recurrenceType}
-              onValueChange={setRecurrenceType}
+              onValueChange={(value) => setRecurrenceType(value as RecurrenceType)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select recurrence pattern" />
@@ -296,7 +296,7 @@ export function RecurringTransactionDialog({
           
           <div className="flex justify-end space-x-2">
             <Button 
-              variant="outline" 
+              variant="outline"
               type="button" 
               onClick={() => setOpen(false)}
             >

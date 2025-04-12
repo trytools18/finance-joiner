@@ -11,11 +11,14 @@ import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RecurringTransaction, TransactionStatus, PaymentMethod } from "./types";
 
 export function RecurringTransactionsTable({ 
   currencyCode = "USD"
+}: {
+  currencyCode?: "USD" | "EUR" | "GBP";
 }) {
-  const [selectedRecurring, setSelectedRecurring] = useState<any>(null);
+  const [selectedRecurring, setSelectedRecurring] = useState<RecurringTransaction | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmRegenerateOpen, setConfirmRegenerateOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -30,7 +33,7 @@ export function RecurringTransactionsTable({
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as RecurringTransaction[];
     },
   });
 
@@ -114,7 +117,7 @@ export function RecurringTransactionsTable({
           total_amount: selectedRecurring.total_amount,
           party: selectedRecurring.party,
           payment_method: selectedRecurring.payment_method,
-          status: "pending", // Default status for recurring transactions
+          status: "pending" as TransactionStatus, // Explicitly cast to TransactionStatus
           user_id: selectedRecurring.user_id,
           description: selectedRecurring.description,
           recurring_transaction_id: selectedRecurring.id
@@ -174,7 +177,7 @@ export function RecurringTransactionsTable({
                 </TableCell>
                 <TableCell>
                   <span className={recurring.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                    {recurring.type === 'income' ? '+' : '-'} {formatCurrency(recurring.total_amount || recurring.amount, currencyCode)}
+                    {recurring.type === 'income' ? '+' : '-'} {formatCurrency(recurring.total_amount || recurring.amount, currencyCode as "USD" | "EUR" | "GBP")}
                   </span>
                 </TableCell>
                 <TableCell>{format(new Date(recurring.start_date), 'PP')}</TableCell>
