@@ -1,6 +1,7 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
+import { HelmetProvider } from "react-helmet-async"; // Add this import
 import Index from "@/pages/Index";
 import OrganizationSettings from "@/pages/OrganizationSettings";
 import Onboarding from "@/pages/Onboarding";
@@ -15,15 +16,17 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/organization-settings" element={<OrganizationSettings />} />
-            <Route path="/recurring-transactions" element={<RecurringTransactions />} />
-          </Routes>
-        </Router>
-        <Toaster />
+        <HelmetProvider> {/* Wrap with HelmetProvider */}
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/organization-settings" element={<OrganizationSettings />} />
+              <Route path="/recurring-transactions" element={<RecurringTransactions />} />
+            </Routes>
+          </Router>
+          <Toaster />
+        </HelmetProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async"; // Note the change to react-helmet-async
 import { Calendar, Plus } from "lucide-react";
 import { RecurringTransactionDialog } from "../components/transactions/RecurringTransactionDialog";
 import { RecurringTransactionsTable } from "../components/transactions/RecurringTransactionsTable";
