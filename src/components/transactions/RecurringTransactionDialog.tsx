@@ -301,7 +301,7 @@ export function RecurringTransactionDialog({
             setDate={setDate}
             categories={categories}
             parties={parties}
-            defaultPaymentMethod={defaultPaymentMethod}
+            defaultPaymentMethod={defaultPaymentMethod as PaymentMethod}
             defaultVatRate={defaultVatRate}
             vatRates={vatRates}
             transaction={null}
