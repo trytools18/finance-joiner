@@ -103,7 +103,14 @@ export function RecurringTransactionDialog({
     const vatAmount = amount * vatRate;
     const intervalNum = parseInt(intervalValue, 10);
     const occurrencesNum = parseInt(occurrences, 10);
-    const paymentMethod = formData.get("payment_method") as PaymentMethod;
+    
+    // Fix the payment method type issue by ensuring it's a valid PaymentMethod type
+    const paymentMethodValue = formData.get("payment_method")?.toString() || "online";
+    // Validate that the payment method is one of the allowed values
+    const paymentMethod = (["cash", "card", "online"].includes(paymentMethodValue) 
+      ? paymentMethodValue 
+      : "online") as PaymentMethod;
+      
     const transactionDescription = formData.get("description")?.toString() || null;
     const name = formData.get("name")?.toString() || "Recurring Transaction";
     const partyId = formData.get("party")?.toString() || null;
