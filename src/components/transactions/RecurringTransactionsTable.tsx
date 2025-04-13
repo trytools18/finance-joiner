@@ -27,10 +27,8 @@ export function RecurringTransactionsTable({
   const { data: recurringTransactions = [], isLoading } = useQuery({
     queryKey: ["recurring-transactions"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("recurring_transactions")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Use an RPC call instead of direct table access
+      const { data, error } = await supabase.rpc('get_recurring_transactions');
 
       if (error) throw error;
       return data as RecurringTransaction[];
@@ -50,11 +48,11 @@ export function RecurringTransactionsTable({
 
       if (transactionsError) throw transactionsError;
 
-      // Then, delete the recurring pattern itself
-      const { error: recurringError } = await supabase
-        .from("recurring_transactions")
-        .delete()
-        .eq("id", selectedRecurring.id);
+      // Then, delete the recurring pattern itself using an RPC call
+      const { error: recurringError } = await supabase.rpc(
+        'delete_recurring_transaction', 
+        { recurring_id: selectedRecurring.id }
+      );
 
       if (recurringError) throw recurringError;
 
@@ -116,8 +114,8 @@ export function RecurringTransactionsTable({
           vat_clearable: selectedRecurring.vat_clearable,
           total_amount: selectedRecurring.total_amount,
           party: selectedRecurring.party,
-          payment_method: selectedRecurring.payment_method,
-          status: "pending" as TransactionStatus, // Explicitly cast to TransactionStatus
+          payment_method: selectedRecurring.payment_method as PaymentMethod,
+          status: "pending" as TransactionStatus,
           user_id: selectedRecurring.user_id,
           description: selectedRecurring.description,
           recurring_transaction_id: selectedRecurring.id
@@ -149,7 +147,7 @@ export function RecurringTransactionsTable({
   return (
     <div className="space-y-4">
       {recurringTransactions.length === 0 ? (
-        <Alert variant="outline">
+        <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             No recurring transactions found. Create a recurring transaction to automatically generate future transactions.
@@ -177,7 +175,7 @@ export function RecurringTransactionsTable({
                 </TableCell>
                 <TableCell>
                   <span className={recurring.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                    {recurring.type === 'income' ? '+' : '-'} {formatCurrency(recurring.total_amount || recurring.amount, currencyCode as "USD" | "EUR" | "GBP")}
+                    {recurring.type === 'income' ? '+' : '-'} {formatCurrency(recurring.total_amount || recurring.amount, currencyCode)}
                   </span>
                 </TableCell>
                 <TableCell>{format(new Date(recurring.start_date), 'PP')}</TableCell>

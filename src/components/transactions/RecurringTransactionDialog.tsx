@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TransactionFormFields } from "./TransactionFormFields";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TransactionParty, Category, PaymentMethod, Transaction, TransactionStatus, RecurrenceType } from "./types";
+import { TransactionParty, Category, PaymentMethod, Transaction, TransactionStatus, RecurrenceType, RecurringTransactionStatus } from "./types";
 
 export function RecurringTransactionDialog({
   defaultPaymentMethod = "online",
@@ -103,6 +103,7 @@ export function RecurringTransactionDialog({
     const vatAmount = amount * vatRate;
     const intervalNum = parseInt(intervalValue, 10);
     const occurrencesNum = parseInt(occurrences, 10);
+    const paymentMethod = formData.get("payment_method") as PaymentMethod;
 
     // Create recurring transaction template
     const recurringTransaction = {
@@ -115,44 +116,40 @@ export function RecurringTransactionDialog({
       vat_clearable: vatClearable,
       total_amount: totalAmount,
       party: formData.get("party")?.toString() || null,
-      payment_method: formData.get("payment_method") as PaymentMethod,
+      payment_method: paymentMethod,
       description: formData.get("description")?.toString() || null,
       recurrence_type: recurrenceType,
       interval: intervalNum,
       start_date: date.toISOString(),
       user_id: user.id,
-      status: "active"
+      status: 'active' as RecurringTransactionStatus
     };
 
-    // Insert recurring transaction template
-    const { data: recurringData, error: recurringError } = await supabase
-      .from("recurring_transactions")
-      .insert(recurringTransaction)
-      .select();
-
-    if (recurringError) {
-      toast({
-        title: "Error creating recurring transaction",
-        description: recurringError.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Generate the first set of transactions
     try {
-      const startDate = new Date(date);
+      // Insert recurring transaction template using raw SQL since the type isn't in the schema
+      const { data: recurringData, error: recurringError } = await supabase.rpc(
+        'create_recurring_transaction',
+        recurringTransaction
+      );
+
+      if (recurringError) {
+        throw recurringError;
+      }
+
+      const recurringTransactionId = recurringData;
+
+      // Generate the first set of transactions
       for (let i = 0; i < occurrencesNum; i++) {
-        let nextDate = new Date(startDate);
+        let nextDate = new Date(date);
         
         if (recurrenceType === "daily") {
-          nextDate.setDate(startDate.getDate() + (i * intervalNum));
+          nextDate.setDate(nextDate.getDate() + (i * intervalNum));
         } else if (recurrenceType === "weekly") {
-          nextDate.setDate(startDate.getDate() + (i * intervalNum * 7));
+          nextDate.setDate(nextDate.getDate() + (i * intervalNum * 7));
         } else if (recurrenceType === "monthly") {
-          nextDate.setMonth(startDate.getMonth() + (i * intervalNum));
+          nextDate.setMonth(nextDate.getMonth() + (i * intervalNum));
         } else if (recurrenceType === "yearly") {
-          nextDate.setFullYear(startDate.getFullYear() + (i * intervalNum));
+          nextDate.setFullYear(nextDate.getFullYear() + (i * intervalNum));
         }
 
         const transaction = {
@@ -165,11 +162,11 @@ export function RecurringTransactionDialog({
           vat_clearable: vatClearable,
           total_amount: totalAmount,
           party: formData.get("party")?.toString() || null,
-          payment_method: formData.get("payment_method") as PaymentMethod,
+          payment_method: paymentMethod,
           status: "pending" as TransactionStatus,
           user_id: user.id,
           description: formData.get("description")?.toString() || null,
-          recurring_transaction_id: recurringData?.[0]?.id || null
+          recurring_transaction_id: recurringTransactionId
         };
 
         await supabase.from("transactions").insert(transaction);
@@ -205,7 +202,7 @@ export function RecurringTransactionDialog({
           <DialogTitle>Create Recurring Transaction</DialogTitle>
         </DialogHeader>
         
-        <Alert variant="outline" className="mb-4">
+        <Alert className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             This will create multiple future transactions that will appear with "pending" status. You can review and approve them later.
@@ -296,8 +293,8 @@ export function RecurringTransactionDialog({
           
           <div className="flex justify-end space-x-2">
             <Button 
-              variant="outline"
               type="button" 
+              variant="outline"
               onClick={() => setOpen(false)}
             >
               Cancel
