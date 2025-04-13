@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Edit, Trash2, RefreshCw, AlertCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -27,11 +27,13 @@ export function RecurringTransactionsTable({
   const { data: recurringTransactions = [], isLoading } = useQuery({
     queryKey: ["recurring-transactions"],
     queryFn: async () => {
-      // Use an RPC call instead of direct table access
-      const { data, error } = await supabase.rpc('get_recurring_transactions');
+      // Use the edge function to get recurring transactions
+      const { data, error } = await supabase.functions.invoke('recurring_transactions', {
+        body: { action: 'get_recurring_transactions' }
+      });
 
       if (error) throw error;
-      return data as RecurringTransaction[];
+      return (data?.data || []) as RecurringTransaction[];
     },
   });
 
@@ -39,22 +41,15 @@ export function RecurringTransactionsTable({
     if (!selectedRecurring) return;
 
     try {
-      // First, delete all future transactions tied to this recurring pattern
-      const { error: transactionsError } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("recurring_transaction_id", selectedRecurring.id)
-        .gte("date", new Date().toISOString());
+      // Use the edge function to delete the recurring transaction and its instances
+      const { error } = await supabase.functions.invoke('recurring_transactions', {
+        body: { 
+          action: 'delete_recurring_transaction',
+          data: { recurring_id: selectedRecurring.id }
+        }
+      });
 
-      if (transactionsError) throw transactionsError;
-
-      // Then, delete the recurring pattern itself using an RPC call
-      const { error: recurringError } = await supabase.rpc(
-        'delete_recurring_transaction', 
-        { recurring_id: selectedRecurring.id }
-      );
-
-      if (recurringError) throw recurringError;
+      if (error) throw error;
 
       toast({
         title: "Recurring transaction deleted",
@@ -77,19 +72,21 @@ export function RecurringTransactionsTable({
     if (!selectedRecurring) return;
 
     try {
-      // First, delete all future transactions tied to this recurring pattern
-      const { error: deleteError } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("recurring_transaction_id", selectedRecurring.id)
-        .gte("date", new Date().toISOString());
+      // First, delete all future instances
+      const { error: deleteError } = await supabase.functions.invoke('recurring_transactions', {
+        body: { 
+          action: 'delete_recurring_transaction',
+          data: { recurring_id: selectedRecurring.id }
+        }
+      });
 
       if (deleteError) throw deleteError;
 
-      // Generate the new set of transactions based on the recurring pattern
+      // Generate new transactions based on the pattern
       const { interval, recurrence_type } = selectedRecurring;
       const startDate = new Date(); // Use current date as the new start
       const occurrences = 12; // Default to 12 occurrences
+      const transactions = [];
 
       for (let i = 0; i < occurrences; i++) {
         let nextDate = new Date(startDate);
@@ -114,15 +111,25 @@ export function RecurringTransactionsTable({
           vat_clearable: selectedRecurring.vat_clearable,
           total_amount: selectedRecurring.total_amount,
           party: selectedRecurring.party,
-          payment_method: selectedRecurring.payment_method as PaymentMethod,
+          payment_method: selectedRecurring.payment_method,
           status: "pending" as TransactionStatus,
           user_id: selectedRecurring.user_id,
-          description: selectedRecurring.description,
-          recurring_transaction_id: selectedRecurring.id
+          description: selectedRecurring.description
         };
 
-        await supabase.from("transactions").insert(transaction);
+        transactions.push(transaction);
       }
+
+      // Create new recurring pattern with transactions
+      await supabase.functions.invoke('recurring_transactions', {
+        body: { 
+          action: 'create_recurring_transaction',
+          data: {
+            transactions,
+            pattern: selectedRecurring
+          }
+        }
+      });
 
       toast({
         title: "Recurring transactions regenerated",
@@ -130,6 +137,7 @@ export function RecurringTransactionsTable({
       });
 
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
       setConfirmRegenerateOpen(false);
     } catch (error: any) {
       toast({

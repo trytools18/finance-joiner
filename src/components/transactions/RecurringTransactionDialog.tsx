@@ -104,10 +104,13 @@ export function RecurringTransactionDialog({
     const intervalNum = parseInt(intervalValue, 10);
     const occurrencesNum = parseInt(occurrences, 10);
     const paymentMethod = formData.get("payment_method") as PaymentMethod;
+    const transactionDescription = formData.get("description")?.toString() || null;
+    const name = formData.get("name")?.toString() || "Recurring Transaction";
+    const partyId = formData.get("party")?.toString() || null;
 
-    // Create recurring transaction template
-    const recurringTransaction = {
-      name: formData.get("name")?.toString() || "Recurring Transaction",
+    // Create recurring transaction pattern
+    const pattern = {
+      name,
       type: categoryData.type,
       category_id: categoryData.id,
       amount: amount,
@@ -115,9 +118,9 @@ export function RecurringTransactionDialog({
       vat_amount: vatAmount,
       vat_clearable: vatClearable,
       total_amount: totalAmount,
-      party: formData.get("party")?.toString() || null,
+      party: partyId,
       payment_method: paymentMethod,
-      description: formData.get("description")?.toString() || null,
+      description: transactionDescription,
       recurrence_type: recurrenceType,
       interval: intervalNum,
       start_date: date.toISOString(),
@@ -126,19 +129,9 @@ export function RecurringTransactionDialog({
     };
 
     try {
-      // Insert recurring transaction template using raw SQL since the type isn't in the schema
-      const { data: recurringData, error: recurringError } = await supabase.rpc(
-        'create_recurring_transaction',
-        recurringTransaction
-      );
-
-      if (recurringError) {
-        throw recurringError;
-      }
-
-      const recurringTransactionId = recurringData;
-
-      // Generate the first set of transactions
+      // Generate the transactions based on the pattern
+      const transactions = [];
+      
       for (let i = 0; i < occurrencesNum; i++) {
         let nextDate = new Date(date);
         
@@ -161,15 +154,31 @@ export function RecurringTransactionDialog({
           vat_amount: vatAmount,
           vat_clearable: vatClearable,
           total_amount: totalAmount,
-          party: formData.get("party")?.toString() || null,
+          party: partyId,
           payment_method: paymentMethod,
           status: "pending" as TransactionStatus,
           user_id: user.id,
-          description: formData.get("description")?.toString() || null,
-          recurring_transaction_id: recurringTransactionId
+          description: transactionDescription
         };
 
-        await supabase.from("transactions").insert(transaction);
+        transactions.push(transaction);
+      }
+
+      // Use the edge function to create the recurring transaction pattern
+      const { data: recurringData, error: recurringError } = await supabase.functions.invoke(
+        'recurring_transactions', {
+          body: { 
+            action: 'create_recurring_transaction',
+            data: {
+              transactions,
+              pattern
+            }
+          }
+        }
+      );
+      
+      if (recurringError) {
+        throw recurringError;
       }
 
       toast({
