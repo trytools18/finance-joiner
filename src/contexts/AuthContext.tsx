@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (onboardingStatus === "true") {
       updateOnboardingState(true);
     }
-  }, []);
+  }, [updateOnboardingState]);
 
   useEffect(() => {
     // Check active sessions and sets the user

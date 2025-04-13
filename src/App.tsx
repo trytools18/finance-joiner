@@ -19,8 +19,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-        <AuthProvider>
-          <Router>
+        <Router>
+          <AuthProvider>
             <Routes>
               <Route path="/" element={<Sidebar />}>
                 <Route index element={<Suspense fallback={<div>Loading...</div>}><Dashboard /></Suspense>} />
@@ -30,9 +30,9 @@ function App() {
               <Route path="/index" element={<Index />} />
               <Route path="/onboarding" element={<Onboarding />} />
             </Routes>
-          </Router>
-          <Toaster />
-        </AuthProvider>
+            <Toaster />
+          </AuthProvider>
+        </Router>
       </HelmetProvider>
     </QueryClientProvider>
   );
