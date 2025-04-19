@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Outlet, NavLink } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from "./contexts/AuthContext";
@@ -17,6 +17,7 @@ import {
   SidebarFooter
 } from "./components/ui/sidebar";
 import { Suspense } from "react";
+import { Home, CalendarDays, Settings } from "lucide-react";
 
 // Create a layout component that uses Sidebar
 const DashboardLayout = () => {
@@ -24,18 +25,48 @@ const DashboardLayout = () => {
     <div className="flex min-h-screen w-full">
       <Sidebar>
         <SidebarHeader>
-          <div className="p-2">
-            <h2 className="text-lg font-semibold">Finance App</h2>
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-bold">Finance App</h2>
           </div>
         </SidebarHeader>
         <SidebarContent>
-          {/* Sidebar content can be added here */}
+          <nav className="space-y-1 p-2">
+            <NavLink 
+              to="/" 
+              className={({ isActive }) => 
+                `flex items-center px-3 py-2 rounded-md ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`
+              }
+            >
+              <Home className="h-5 w-5 mr-2" />
+              Dashboard
+            </NavLink>
+            <NavLink 
+              to="/recurring-transactions" 
+              className={({ isActive }) => 
+                `flex items-center px-3 py-2 rounded-md ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`
+              }
+            >
+              <CalendarDays className="h-5 w-5 mr-2" />
+              Recurring Transactions
+            </NavLink>
+            <NavLink 
+              to="/organization-settings" 
+              className={({ isActive }) => 
+                `flex items-center px-3 py-2 rounded-md ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`
+              }
+            >
+              <Settings className="h-5 w-5 mr-2" />
+              Organization Settings
+            </NavLink>
+          </nav>
         </SidebarContent>
         <SidebarFooter>
-          {/* Footer content */}
+          <div className="p-4 border-t">
+            <p className="text-sm text-muted-foreground">© 2025 Finance App</p>
+          </div>
         </SidebarFooter>
       </Sidebar>
-      <main className="flex-1">
+      <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>

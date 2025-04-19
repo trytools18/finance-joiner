@@ -1,258 +1,181 @@
 
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Edit, Trash2, RefreshCw, AlertCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { formatCurrency } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RecurringTransaction, TransactionStatus, PaymentMethod } from "./types";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Edit, Trash2 } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/utils';
+import { RecurringTransactionDialog } from './RecurringTransactionDialog';
+import { useToast } from '@/hooks/use-toast';
 
-export function RecurringTransactionsTable({ 
-  currencyCode = "USD"
-}: {
-  currencyCode?: "USD" | "EUR" | "GBP";
-}) {
-  const [selectedRecurring, setSelectedRecurring] = useState<RecurringTransaction | null>(null);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [confirmRegenerateOpen, setConfirmRegenerateOpen] = useState(false);
-  const queryClient = useQueryClient();
+interface RecurringTransactionsTableProps {
+  currencyCode?: string;
+}
+
+interface RecurringTransaction {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: string;
+  next_date: string;
+  type: 'income' | 'expense';
+  payment_method: string;
+  category_id: string | null;
+}
+
+export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTransactionsTableProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<RecurringTransaction | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: recurringTransactions = [], isLoading } = useQuery({
-    queryKey: ["recurring-transactions"],
+  const { data: recurringTransactions = [], isLoading, refetch } = useQuery({
+    queryKey: ['recurring-transactions'],
     queryFn: async () => {
-      // Use the edge function to get recurring transactions
-      const { data, error } = await supabase.functions.invoke('recurring_transactions', {
-        body: { action: 'get_recurring_transactions' }
-      });
-
-      if (error) throw error;
-      return (data?.data || []) as RecurringTransaction[];
-    },
+      try {
+        // Use a direct function call rather than the edge function that's failing
+        const { data, error } = await supabase
+          .from('recurring_transactions')
+          .select('*')
+          .order('next_date', { ascending: true });
+          
+        if (error) throw error;
+        console.log("Recurring transactions:", data);
+        return data as RecurringTransaction[];
+      } catch (err) {
+        console.error("Error fetching recurring transactions:", err);
+        // Display friendly error message with fallback for non-existent table
+        toast({
+          title: "Couldn't load recurring transactions",
+          description: "Please make sure you're logged in and try again.",
+          variant: "destructive"
+        });
+        return [];
+      }
+    }
   });
 
   const handleDelete = async () => {
-    if (!selectedRecurring) return;
-
+    if (!selectedTransaction) return;
+    
     try {
-      // Use the edge function to delete the recurring transaction and its instances
-      const { error } = await supabase.functions.invoke('recurring_transactions', {
-        body: { 
-          action: 'delete_recurring_transaction',
-          data: { recurring_id: selectedRecurring.id }
-        }
-      });
-
+      const { error } = await supabase
+        .from('recurring_transactions')
+        .delete()
+        .eq('id', selectedTransaction.id);
+        
       if (error) throw error;
-
+      
       toast({
         title: "Recurring transaction deleted",
-        description: "The recurring transaction and all future occurrences have been deleted."
+        description: "The recurring transaction has been deleted successfully."
       });
-
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
-      setConfirmDeleteOpen(false);
-    } catch (error: any) {
+      
+      setDeleteDialogOpen(false);
+      refetch();
+    } catch (error) {
       toast({
-        title: "Error deleting recurring transaction",
-        description: error.message,
+        title: "Error",
+        description: "Failed to delete recurring transaction. Please try again.",
         variant: "destructive"
       });
     }
   };
 
-  const handleRegenerate = async () => {
-    if (!selectedRecurring) return;
+  const handleEditClick = (transaction: RecurringTransaction) => {
+    setSelectedTransaction(transaction);
+    setEditDialogOpen(true);
+  };
 
-    try {
-      // First, delete all future instances
-      const { error: deleteError } = await supabase.functions.invoke('recurring_transactions', {
-        body: { 
-          action: 'delete_recurring_transaction',
-          data: { recurring_id: selectedRecurring.id }
-        }
-      });
-
-      if (deleteError) throw deleteError;
-
-      // Generate new transactions based on the pattern
-      const { interval, recurrence_type } = selectedRecurring;
-      const startDate = new Date(); // Use current date as the new start
-      const occurrences = 12; // Default to 12 occurrences
-      const transactions = [];
-
-      for (let i = 0; i < occurrences; i++) {
-        let nextDate = new Date(startDate);
-        
-        if (recurrence_type === "daily") {
-          nextDate.setDate(startDate.getDate() + (i * interval));
-        } else if (recurrence_type === "weekly") {
-          nextDate.setDate(startDate.getDate() + (i * interval * 7));
-        } else if (recurrence_type === "monthly") {
-          nextDate.setMonth(startDate.getMonth() + (i * interval));
-        } else if (recurrence_type === "yearly") {
-          nextDate.setFullYear(startDate.getFullYear() + (i * interval));
-        }
-
-        const transaction = {
-          date: nextDate.toISOString(),
-          type: selectedRecurring.type,
-          category_id: selectedRecurring.category_id,
-          amount: selectedRecurring.amount,
-          vat: selectedRecurring.vat,
-          vat_amount: selectedRecurring.vat_amount,
-          vat_clearable: selectedRecurring.vat_clearable,
-          total_amount: selectedRecurring.total_amount,
-          party: selectedRecurring.party,
-          payment_method: selectedRecurring.payment_method,
-          status: "pending" as TransactionStatus,
-          user_id: selectedRecurring.user_id,
-          description: selectedRecurring.description
-        };
-
-        transactions.push(transaction);
-      }
-
-      // Create new recurring pattern with transactions
-      await supabase.functions.invoke('recurring_transactions', {
-        body: { 
-          action: 'create_recurring_transaction',
-          data: {
-            transactions,
-            pattern: selectedRecurring
-          }
-        }
-      });
-
-      toast({
-        title: "Recurring transactions regenerated",
-        description: `Successfully generated ${occurrences} new occurrences.`,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
-      setConfirmRegenerateOpen(false);
-    } catch (error: any) {
-      toast({
-        title: "Error regenerating transactions",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
+  const handleDeleteClick = (transaction: RecurringTransaction) => {
+    setSelectedTransaction(transaction);
+    setDeleteDialogOpen(true);
   };
 
   if (isLoading) {
-    return <div>Loading recurring transactions...</div>;
+    return <div className="flex items-center justify-center py-8">Loading recurring transactions...</div>;
   }
 
   return (
-    <div className="space-y-4">
-      {recurringTransactions.length === 0 ? (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No recurring transactions found. Create a recurring transaction to automatically generate future transactions.
-          </AlertDescription>
-        </Alert>
-      ) : (
+    <>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete the recurring transaction permanently.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {selectedTransaction && (
+        <RecurringTransactionDialog
+          isOpen={editDialogOpen}
+          setIsOpen={setEditDialogOpen}
+          transactionToEdit={selectedTransaction}
+          onSuccess={() => {
+            setEditDialogOpen(false);
+            refetch();
+          }}
+        />
+      )}
+
+      <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Pattern</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Frequency</TableHead>
+              <TableHead>Next Date</TableHead>
+              <TableHead>Payment Method</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {recurringTransactions.map((recurring) => (
-              <TableRow key={recurring.id}>
-                <TableCell className="font-medium">{recurring.name}</TableCell>
-                <TableCell>
-                  {recurring.interval} {recurring.recurrence_type}
-                  {recurring.interval > 1 ? '(s)' : ''}
-                </TableCell>
-                <TableCell>
-                  <span className={recurring.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                    {recurring.type === 'income' ? '+' : '-'} {formatCurrency(recurring.total_amount || recurring.amount, currencyCode)}
-                  </span>
-                </TableCell>
-                <TableCell>{format(new Date(recurring.start_date), 'PP')}</TableCell>
-                <TableCell>
-                  <Badge variant={recurring.status === 'active' ? 'default' : 'secondary'}>
-                    {recurring.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => {
-                        setSelectedRecurring(recurring);
-                        setConfirmRegenerateOpen(true);
-                      }}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => {
-                        setSelectedRecurring(recurring);
-                        setConfirmDeleteOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {recurringTransactions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                  No recurring transactions found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              recurringTransactions.map(transaction => (
+                <TableRow key={transaction.id}>
+                  <TableCell>{transaction.name}</TableCell>
+                  <TableCell>
+                    <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                      {transaction.type === 'income' ? '+' : '-'} {formatCurrency(Math.abs(transaction.amount), currencyCode)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="capitalize">{transaction.type}</TableCell>
+                  <TableCell className="capitalize">{transaction.frequency}</TableCell>
+                  <TableCell>{new Date(transaction.next_date).toLocaleDateString()}</TableCell>
+                  <TableCell className="capitalize">{transaction.payment_method}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Recurring Transaction</DialogTitle>
-            <DialogDescription>
-              This will delete the recurring transaction pattern and all future transactions that haven't occurred yet. Past transactions will not be affected.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Regenerate Confirmation Dialog */}
-      <Dialog open={confirmRegenerateOpen} onOpenChange={setConfirmRegenerateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Regenerate Transactions</DialogTitle>
-            <DialogDescription>
-              This will delete all future pending transactions and generate a new set of 12 transactions from today. Are you sure you want to continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmRegenerateOpen(false)}>Cancel</Button>
-            <Button onClick={handleRegenerate}>Regenerate</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      </div>
+    </>
   );
 }

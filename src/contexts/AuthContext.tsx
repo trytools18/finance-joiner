@@ -1,8 +1,10 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthState, User } from "@/lib/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuthFunctions } from "@/hooks/useAuthFunctions";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
@@ -32,6 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loading: true,
   });
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { 
     isNewUser, 
     onboardingCompleted, 
@@ -53,10 +56,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [updateOnboardingState]);
 
   useEffect(() => {
+    console.log("AuthProvider: Setting up auth state check and listener");
+    
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       console.log("Auth session check - User found:", !!user);
+      
+      if (user) {
+        console.log("Authenticated user:", user.email);
+        toast({
+          title: "Authenticated",
+          description: `Logged in as ${user.email}`,
+        });
+      }
       
       setAuthState({
         user,
@@ -83,6 +96,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log("Auth state change event:", _event);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
+      
+      if (user) {
+        console.log("User authenticated:", user.email);
+      } else {
+        console.log("No authenticated user");
+      }
       
       setAuthState({
         user,
@@ -116,7 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, updateNewUserState]);
+  }, [navigate, updateNewUserState, toast, updateOnboardingState]);
 
   return (
     <AuthContext.Provider value={{ 

@@ -1,5 +1,5 @@
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,45 +17,108 @@ import { TransactionsSection } from "./sections/TransactionsSection";
 import { useTransactionStats } from "./hooks/useTransactionStats";
 import { useRealtimeTransactions } from "./hooks/useRealtimeTransactions";
 import { RecurringTransactionDialog } from "../transactions/RecurringTransactionDialog";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
 import type { Transaction } from "../transactions/types";
+import { useToast } from "@/hooks/use-toast";
 
 export const Dashboard = () => {
   const { user } = useAuth();
   const { parties, categories } = useTransactionData();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isError, setIsError] = useState(false);
 
+  // Fetch organization settings
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
     queryFn: async () => {
-      if (!user?.id) throw new Error("No user found");
+      console.log("Fetching organization settings for user:", user?.id);
+      if (!user?.id) {
+        console.log("No user found, returning default settings");
+        return {
+          default_currency: 'USD',
+          default_payment_method: 'online',
+          default_vat_rate: 0.24,
+          vat_rates: [0, 10, 24]
+        } as OrganizationSettings;
+      }
 
-      const { data, error } = await supabase
-        .from("organization_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from("organization_settings")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data as OrganizationSettings;
+        if (error) {
+          console.error("Error fetching settings:", error);
+          throw error;
+        }
+        
+        console.log("Retrieved settings:", data);
+        if (!data) {
+          console.log("No settings found, returning default settings");
+          return {
+            default_currency: 'USD',
+            default_payment_method: 'online',
+            default_vat_rate: 0.24,
+            vat_rates: [0, 10, 24]
+          } as OrganizationSettings;
+        }
+        
+        return data as OrganizationSettings;
+      } catch (err) {
+        console.error("Error in settings fetch:", err);
+        setIsError(true);
+        toast({
+          title: "Error fetching settings",
+          description: "Could not fetch organization settings",
+          variant: "destructive"
+        });
+        return {
+          default_currency: 'USD',
+          default_payment_method: 'online',
+          default_vat_rate: 0.24,
+          vat_rates: [0, 10, 24]
+        } as OrganizationSettings;
+      }
     },
-    enabled: !!user,
+    enabled: true, // Always try to fetch, even if user is null
+    retry: 3,
   });
 
+  // Fetch transactions
   const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .order("date", { ascending: false });
+      console.log("Fetching transactions");
+      try {
+        const { data, error } = await supabase
+          .from("transactions")
+          .select("*")
+          .order("date", { ascending: false });
 
-      if (error) throw error;
-      return data as Transaction[];
+        if (error) {
+          console.error("Error fetching transactions:", error);
+          throw error;
+        }
+        
+        console.log("Retrieved transactions:", data);
+        return data as Transaction[];
+      } catch (err) {
+        console.error("Error in transactions fetch:", err);
+        setIsError(true);
+        toast({
+          title: "Error fetching transactions",
+          description: "Could not fetch transaction data",
+          variant: "destructive"
+        });
+        return [];
+      }
     },
-    enabled: !!user,
+    retry: 3,
   });
 
   // Use our real-time hook to get updated transactions
