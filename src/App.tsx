@@ -21,16 +21,18 @@ function App() {
       <HelmetProvider>
         <Router>
           <SidebarProvider>
-            <Routes>
-              <Route path="/" element={<Sidebar />}>
-                <Route index element={<Suspense fallback={<div>Loading...</div>}><Dashboard /></Suspense>} />
-                <Route path="/organization-settings" element={<OrganizationSettings />} />
-                <Route path="/recurring-transactions" element={<RecurringTransactions />} />
-              </Route>
-              <Route path="/index" element={<Index />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-            </Routes>
-            <Toaster />
+            <AuthProvider>
+              <Routes>
+                <Route path="/" element={<Sidebar />}>
+                  <Route index element={<Suspense fallback={<div>Loading...</div>}><Dashboard /></Suspense>} />
+                  <Route path="/organization-settings" element={<OrganizationSettings />} />
+                  <Route path="/recurring-transactions" element={<RecurringTransactions />} />
+                </Route>
+                <Route path="/index" element={<Index />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+              </Routes>
+              <Toaster />
+            </AuthProvider>
           </SidebarProvider>
         </Router>
       </HelmetProvider>
