@@ -93,7 +93,7 @@ export function BasicSettingsFields() {
                       !field.value && "text-muted-foreground"
                     )}
                   >
-                    {field.value ? (
+                    {field.value && isValidDate(field.value) ? (
                       format(field.value, "PPP")
                     ) : (
                       <span>Pick a date</span>
@@ -111,6 +111,7 @@ export function BasicSettingsFields() {
                     date > new Date() || date < new Date("1900-01-01")
                   }
                   initialFocus
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
@@ -120,4 +121,9 @@ export function BasicSettingsFields() {
       />
     </>
   );
+}
+
+// Helper function to safely check if a date is valid
+function isValidDate(date: any): boolean {
+  return date instanceof Date && !isNaN(date.getTime());
 }

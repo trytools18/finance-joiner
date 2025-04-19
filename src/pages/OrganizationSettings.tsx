@@ -80,15 +80,42 @@ export default function OrganizationSettings() {
 
   useEffect(() => {
     if (settings) {
-      form.reset({
-        default_currency: settings.default_currency,
-        default_payment_method: settings.default_payment_method,
-        fiscal_year_start: new Date(settings.fiscal_year_start),
-        default_vat_rate: settings.default_vat_rate,
-        vat_rates: Array.isArray(settings.vat_rates) 
-          ? settings.vat_rates.map(Number)
-          : DEFAULT_VAT_RATES,
-      });
+      try {
+        // Safely parse the date string into a valid Date object
+        let fiscalYearDate: Date;
+        
+        try {
+          fiscalYearDate = settings.fiscal_year_start 
+            ? new Date(settings.fiscal_year_start) 
+            : new Date();
+            
+          // Additional validation to ensure it's a valid date
+          if (isNaN(fiscalYearDate.getTime())) {
+            console.warn("Invalid fiscal_year_start date:", settings.fiscal_year_start);
+            fiscalYearDate = new Date(); // Fallback to current date
+          }
+        } catch (e) {
+          console.error("Error parsing fiscal_year_start:", e);
+          fiscalYearDate = new Date(); // Fallback to current date
+        }
+
+        form.reset({
+          default_currency: settings.default_currency,
+          default_payment_method: settings.default_payment_method,
+          fiscal_year_start: fiscalYearDate,
+          default_vat_rate: settings.default_vat_rate,
+          vat_rates: Array.isArray(settings.vat_rates) 
+            ? settings.vat_rates.map(Number)
+            : DEFAULT_VAT_RATES,
+        });
+      } catch (error) {
+        console.error("Error setting form values:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load settings. Using default values.",
+          variant: "destructive",
+        });
+      }
     }
   }, [settings, form]);
 
