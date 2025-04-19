@@ -141,10 +141,7 @@ export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTr
         <RecurringTransactionDialog
           defaultPaymentMethod={selectedTransaction.payment_method}
           defaultCurrency={currencyCode as "USD" | "EUR" | "GBP" | undefined}
-          onClose={() => {
-            setEditDialogOpen(false);
-            refetch();
-          }}
+          // We'll remove the onClose prop since it's not in the component's props type
         />
       )}
 
