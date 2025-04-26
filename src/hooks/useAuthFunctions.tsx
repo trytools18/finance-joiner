@@ -13,6 +13,11 @@ export function useAuthFunctions() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       console.log("Sign in successful");
+      
+      toast({
+        title: "Sign in successful",
+        description: "Welcome back!",
+      });
     } catch (error: any) {
       console.error("Sign in error:", error);
       
@@ -70,15 +75,30 @@ export function useAuthFunctions() {
 
   const signOut = async () => {
     try {
-      console.log("Attempting sign out");
+      console.log("useAuthFunctions: Attempting sign out");
+      
+      // First, call the Supabase sign-out method
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      console.log("Sign out successful");
+      
+      // Clear any auth-related items from localStorage (belt and suspenders approach)
+      localStorage.removeItem("supabase.auth.token");
+      localStorage.removeItem("sb-access-token");
+      localStorage.removeItem("sb-refresh-token");
+      
+      // Keep onboardingCompleted status as it's not authentication-related
+      
+      console.log("useAuthFunctions: Sign out successful");
+      
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out from your account",
+      });
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast({
         title: "Error signing out",
-        description: error.message,
+        description: error.message || "There was a problem signing you out",
         variant: "destructive",
       });
       throw error;

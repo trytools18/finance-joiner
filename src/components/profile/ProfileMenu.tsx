@@ -11,10 +11,26 @@ import { Button } from "@/components/ui/button";
 import { Briefcase, LogOut, User, UserCog } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export function ProfileMenu() {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      setIsLoading(true);
+      console.log("ProfileMenu: Initiating sign out process");
+      await signOut();
+      console.log("ProfileMenu: Sign out successful, navigating to index");
+      navigate("/index");
+    } catch (error) {
+      console.error("ProfileMenu: Error during sign out:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -40,9 +56,13 @@ export function ProfileMenu() {
           Organizations
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()}>
+        <DropdownMenuItem 
+          onClick={handleSignOut} 
+          disabled={isLoading}
+          className={isLoading ? "opacity-50 cursor-not-allowed" : ""}
+        >
           <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
+          {isLoading ? "Signing Out..." : "Sign Out"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

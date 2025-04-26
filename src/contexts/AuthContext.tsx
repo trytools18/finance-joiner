@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     onboardingCompleted, 
     signIn, 
     signUp, 
-    signOut, 
+    signOut: authFunctionSignOut, 
     completeOnboarding,
     updateOnboardingState,
     updateNewUserState
@@ -54,6 +54,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       updateOnboardingState(true);
     }
   }, [updateOnboardingState]);
+
+  // Wrapper for sign out that ensures navigation happens after sign out is complete
+  const signOut = async () => {
+    console.log("AuthContext: Signing out...");
+    await authFunctionSignOut();
+    console.log("AuthContext: Sign out complete, updating auth state");
+    // Explicitly set user to null to ensure UI updates immediately
+    setAuthState({
+      user: null,
+      loading: false
+    });
+    console.log("AuthContext: Navigating to index page after sign out");
+    navigate("/index");
+  };
 
   useEffect(() => {
     console.log("AuthProvider: Setting up auth state check and listener");
@@ -93,8 +107,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // Listen for changes on auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state change event:", _event);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state change event:", event);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       
       if (user) {
@@ -109,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       // If this is a sign-up or sign-in event
-      if (_event === "SIGNED_IN") {
+      if (event === "SIGNED_IN") {
         console.log("Sign in event detected");
         
         // Check if onboarding has been completed
@@ -128,9 +142,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       // Handle SIGNED_OUT events
-      if (_event === "SIGNED_OUT") {
+      if (event === "SIGNED_OUT") {
         console.log("User signed out, cleaning up state");
-        // Keep the onboardingCompleted value in localStorage
+        console.log("Navigation to index will be handled by the signOut function");
       }
     });
 
