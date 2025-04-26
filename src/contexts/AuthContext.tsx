@@ -58,15 +58,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Wrapper for sign out that ensures navigation happens after sign out is complete
   const signOut = async () => {
     console.log("AuthContext: Signing out...");
-    await authFunctionSignOut();
-    console.log("AuthContext: Sign out complete, updating auth state");
-    // Explicitly set user to null to ensure UI updates immediately
-    setAuthState({
-      user: null,
-      loading: false
-    });
-    console.log("AuthContext: Navigating to index page after sign out");
-    navigate("/index");
+    try {
+      await authFunctionSignOut();
+      console.log("AuthContext: Sign out complete, updating auth state");
+      // Explicitly set user to null to ensure UI updates immediately
+      setAuthState({
+        user: null,
+        loading: false
+      });
+      console.log("AuthContext: Navigating to index page after sign out");
+      navigate("/index");
+      return;
+    } catch (error) {
+      console.error("AuthContext: Error during sign out:", error);
+      // Even if there's an error, we should still try to navigate to index
+      navigate("/index");
+    }
   };
 
   useEffect(() => {
@@ -79,10 +86,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (user) {
         console.log("Authenticated user:", user.email);
-        toast({
-          title: "Authenticated",
-          description: `Logged in as ${user.email}`,
-        });
+        // Remove this toast to prevent duplicate authentication messages
+        // toast({
+        //   title: "Authenticated",
+        //   description: `Logged in as ${user.email}`,
+        // });
       }
       
       setAuthState({
@@ -144,7 +152,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Handle SIGNED_OUT events
       if (event === "SIGNED_OUT") {
         console.log("User signed out, cleaning up state");
-        console.log("Navigation to index will be handled by the signOut function");
       }
     });
 
