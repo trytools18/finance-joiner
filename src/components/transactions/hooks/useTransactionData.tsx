@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TransactionParty, Category, Transaction, TransactionStatus } from "../types";
@@ -62,6 +63,35 @@ export const useTransactionData = () => {
       return data as Category[];
     },
   });
+
+  // Let's add a direct transaction fetcher for debugging purposes
+  const fetchTransactions = async () => {
+    console.log("Directly fetching transactions for debugging...");
+    try {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("date", { ascending: false });
+      
+      if (error) {
+        console.error("Debug fetch error:", error);
+        return [];
+      }
+      
+      console.log("Debug fetch found transactions:", data?.length || 0);
+      if (data && data.length > 0) {
+        console.log("Sample transaction:", data[0]);
+      }
+      
+      return data;
+    } catch (err) {
+      console.error("Exception in debug fetch:", err);
+      return [];
+    }
+  };
+
+  // Call it immediately for debugging
+  fetchTransactions();
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TransactionStatus }) => {

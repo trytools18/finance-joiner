@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,11 +88,11 @@ export const Dashboard = () => {
     retry: 3,
   });
 
-  // Fetch transactions
+  // Fetch transactions with better debugging
   const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
-      console.log("Fetching transactions");
+      console.log("Fetching transactions from Dashboard component");
       try {
         const { data, error } = await supabase
           .from("transactions")
@@ -105,7 +104,15 @@ export const Dashboard = () => {
           throw error;
         }
         
-        console.log("Retrieved transactions:", data);
+        console.log("Dashboard retrieved transactions:", data ? data.length : 0);
+        if (data && data.length > 0) {
+          console.log("First transaction:", data[0]);
+          console.log("Transaction types:", data.map(t => t.type).slice(0, 5));
+          console.log("Transaction status values:", data.map(t => t.status).slice(0, 5));
+        } else {
+          console.log("No transactions found in the database");
+        }
+        
         return data as Transaction[];
       } catch (err) {
         console.error("Error in transactions fetch:", err);
@@ -123,6 +130,8 @@ export const Dashboard = () => {
 
   // Use our real-time hook to get updated transactions
   const currentTransactions = useRealtimeTransactions(user, transactions);
+  
+  console.log("Dashboard current transactions count:", currentTransactions.length);
 
   // Helper functions for filtering
   const getPartyName = (partyId: string | null): string => {

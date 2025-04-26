@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp } from "lucide-react";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { Transaction } from "@/components/transactions/types";
+import { useEffect } from "react";
 
 interface TransactionsSectionProps {
   filteredTransactions: Transaction[];
@@ -13,6 +14,14 @@ export function TransactionsSection({
   filteredTransactions,
   currencyCode
 }: TransactionsSectionProps) {
+  // Add debugging to track filtered transactions
+  useEffect(() => {
+    console.log("TransactionsSection received filtered transactions:", filteredTransactions.length);
+    if (filteredTransactions.length > 0) {
+      console.log("First filtered transaction:", filteredTransactions[0]);
+    }
+  }, [filteredTransactions]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

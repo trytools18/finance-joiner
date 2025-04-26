@@ -2,6 +2,7 @@
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Transaction, Column } from "../types";
+import { useEffect } from "react";
 
 interface TableContentProps {
   transactions: Transaction[];
@@ -21,6 +22,15 @@ export const TableContent = ({
   const isSelected = (transaction: Transaction) => {
     return selectedTransactions.some(t => t.id === transaction.id);
   };
+
+  // Add debugging to help identify why transactions might not be showing
+  useEffect(() => {
+    console.log("TableContent received transactions:", transactions);
+    console.log("Number of transactions:", transactions.length);
+    if (transactions.length > 0) {
+      console.log("First transaction sample:", transactions[0]);
+    }
+  }, [transactions]);
 
   return (
     <TableBody>
