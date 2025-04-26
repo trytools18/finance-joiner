@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -71,32 +70,10 @@ export function useAuthFunctions() {
 
   const signOut = async () => {
     try {
-      console.log("Attempting sign out from useAuthFunctions");
-      
-      // Clear auth-related items from local storage
-      localStorage.removeItem("sb-zrjjiuxbedqkbulcyynn-auth-token");
-      localStorage.removeItem("supabase.auth.token");
-      
-      // More aggressive approach to clear session
-      for (const key in localStorage) {
-        if (key.startsWith("sb-") || key.includes("supabase")) {
-          console.log(`Removing localStorage key: ${key}`);
-          localStorage.removeItem(key);
-        }
-      }
-      
+      console.log("Attempting sign out");
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Supabase signOut error:", error);
-        throw error;
-      }
-      
+      if (error) throw error;
       console.log("Sign out successful");
-      
-      toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account.",
-      });
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast({

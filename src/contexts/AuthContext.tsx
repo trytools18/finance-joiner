@@ -93,19 +93,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // Listen for changes on auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state change event:", event);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state change event:", _event);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       
       if (user) {
         console.log("User authenticated:", user.email);
       } else {
         console.log("No authenticated user");
-        // Explicitly redirect to index when signed out
-        if (event === "SIGNED_OUT") {
-          console.log("User signed out, redirecting to index");
-          navigate("/index");
-        }
       }
       
       setAuthState({
@@ -114,7 +109,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       // If this is a sign-up or sign-in event
-      if (event === "SIGNED_IN") {
+      if (_event === "SIGNED_IN") {
         console.log("Sign in event detected");
         
         // Check if onboarding has been completed
@@ -133,7 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       // Handle SIGNED_OUT events
-      if (event === "SIGNED_OUT") {
+      if (_event === "SIGNED_OUT") {
         console.log("User signed out, cleaning up state");
         // Keep the onboardingCompleted value in localStorage
       }
