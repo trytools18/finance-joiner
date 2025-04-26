@@ -73,8 +73,17 @@ export function useAuthFunctions() {
     try {
       console.log("Attempting sign out from useAuthFunctions");
       
-      // Force clear any local storage items related to auth
+      // Clear auth-related items from local storage
       localStorage.removeItem("sb-zrjjiuxbedqkbulcyynn-auth-token");
+      localStorage.removeItem("supabase.auth.token");
+      
+      // More aggressive approach to clear session
+      for (const key in localStorage) {
+        if (key.startsWith("sb-") || key.includes("supabase")) {
+          console.log(`Removing localStorage key: ${key}`);
+          localStorage.removeItem(key);
+        }
+      }
       
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -84,7 +93,6 @@ export function useAuthFunctions() {
       
       console.log("Sign out successful");
       
-      // Show success toast
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",
