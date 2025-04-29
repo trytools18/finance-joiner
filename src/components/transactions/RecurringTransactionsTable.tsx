@@ -10,6 +10,8 @@ import { formatCurrency } from '@/lib/utils';
 import { RecurringTransactionDialog } from './RecurringTransactionDialog';
 import { useToast } from '@/hooks/use-toast';
 import { PaymentMethod } from './types';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface RecurringTransactionsTableProps {
   currencyCode?: string;
@@ -33,11 +35,18 @@ export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTr
   const [selectedTransaction, setSelectedTransaction] = useState<RecurringTransaction | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: recurringTransactions = [], isLoading, refetch } = useQuery({
-    queryKey: ['recurring-transactions'],
+    queryKey: ['recurring-transactions', user?.id],
     queryFn: async () => {
+      if (!user?.id) {
+        console.log("No user found, returning empty recurring transactions");
+        return [];
+      }
+
       try {
+        console.log("Fetching recurring transactions...");
         // Since there's no recurring_transactions table, we'll fetch from transactions 
         // with special filtering to get recurring ones
         const { data, error } = await supabase
@@ -45,11 +54,20 @@ export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTr
           .select('*')
           // We would need a column to identify recurring transactions
           // For now, we'll just get the most recent transactions as a placeholder
+          .eq('user_id', user.id)
           .order('date', { ascending: false })
           .limit(5); // Just get a few for demo purposes
           
-        if (error) throw error;
-        console.log("Transactions for recurring display:", data);
+        if (error) {
+          console.error("Error fetching recurring transactions:", error);
+          throw error;
+        }
+        
+        console.log("Transactions for recurring display:", data?.length || 0);
+        
+        if (!data || data.length === 0) {
+          return [];
+        }
         
         // Transform the transaction data to match our RecurringTransaction interface
         const recurringData = data.map(transaction => ({
@@ -75,7 +93,10 @@ export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTr
         });
         return [];
       }
-    }
+    },
+    enabled: !!user?.id,
+    retry: 3,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
 
   const handleDelete = async () => {
@@ -117,7 +138,36 @@ export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTr
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-8">Loading recurring transactions...</div>;
+    return (
+      <div className="rounded-md border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Frequency</TableHead>
+              <TableHead>Next Date</TableHead>
+              <TableHead>Payment Method</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[1, 2, 3].map(i => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
   }
 
   return (
@@ -141,7 +191,8 @@ export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTr
         <RecurringTransactionDialog
           defaultPaymentMethod={selectedTransaction.payment_method}
           defaultCurrency={currencyCode as "USD" | "EUR" | "GBP" | undefined}
-          // We'll remove the onClose prop since it's not in the component's props type
+          isOpen={editDialogOpen}
+          onOpenChange={() => setEditDialogOpen(false)}
         />
       )}
 

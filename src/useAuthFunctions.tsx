@@ -36,7 +36,7 @@ export function useAuthFunctions() {
       } else {
         toast({
           title: "Error signing in",
-          description: error.message,
+          description: error.message || "An error occurred during sign in",
           variant: "destructive",
         });
       }
@@ -71,7 +71,7 @@ export function useAuthFunctions() {
       console.error("Sign up error:", error);
       toast({
         title: "Error signing up",
-        description: error.message,
+        description: error.message || "An error occurred during sign up",
         variant: "destructive",
       });
       throw error;
@@ -83,8 +83,14 @@ export function useAuthFunctions() {
       console.log("useAuthFunctions: Attempting sign out");
       
       // First, call the Supabase sign-out method
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const { error } = await supabase.auth.signOut({
+        scope: 'local' // This ensures only the current device is signed out
+      });
+      
+      if (error) {
+        console.error("Sign out Supabase error:", error);
+        throw error;
+      }
       
       // Clear any auth-related items from localStorage
       localStorage.removeItem("supabase.auth.token");

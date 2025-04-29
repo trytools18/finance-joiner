@@ -3,6 +3,7 @@ import { TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Transaction, Column } from "../types";
 import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TableContentProps {
   transactions: Transaction[];
@@ -10,6 +11,7 @@ interface TableContentProps {
   onRowClick?: (transaction: Transaction, isSelectionMode: boolean) => void;
   selectedTransactions?: Transaction[];
   isSelectionMode?: boolean;
+  isLoading?: boolean;
 }
 
 export const TableContent = ({ 
@@ -17,7 +19,8 @@ export const TableContent = ({
   columns, 
   onRowClick,
   selectedTransactions = [],
-  isSelectionMode = false
+  isSelectionMode = false,
+  isLoading = false
 }: TableContentProps) => {
   const isSelected = (transaction: Transaction) => {
     return selectedTransactions.some(t => t.id === transaction.id);
@@ -26,15 +29,31 @@ export const TableContent = ({
   // Add debugging to help identify why transactions might not be showing
   useEffect(() => {
     console.log("TableContent received transactions:", transactions);
-    console.log("Number of transactions:", transactions.length);
-    if (transactions.length > 0) {
+    console.log("Number of transactions:", transactions?.length || 0);
+    if (transactions && transactions.length > 0) {
       console.log("First transaction sample:", transactions[0]);
     }
   }, [transactions]);
 
+  if (isLoading) {
+    return (
+      <TableBody>
+        {[1, 2, 3].map(i => (
+          <TableRow key={i}>
+            {columns.map((column, colIndex) => (
+              <TableCell key={`loading-${i}-${colIndex}`}>
+                <Skeleton className="h-4 w-full" />
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    );
+  }
+
   return (
     <TableBody>
-      {transactions.length === 0 ? (
+      {!transactions || transactions.length === 0 ? (
         <TableRow>
           <TableCell colSpan={columns.length} className="text-center py-6 text-muted-foreground">
             No transactions found

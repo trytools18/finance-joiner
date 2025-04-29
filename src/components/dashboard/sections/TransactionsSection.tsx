@@ -4,20 +4,23 @@ import { TrendingUp } from "lucide-react";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { Transaction } from "@/components/transactions/types";
 import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TransactionsSectionProps {
   filteredTransactions: Transaction[];
   currencyCode: "USD" | "EUR" | "GBP";
+  isLoading?: boolean;
 }
 
 export function TransactionsSection({
   filteredTransactions,
-  currencyCode
+  currencyCode,
+  isLoading = false
 }: TransactionsSectionProps) {
   // Add debugging to track filtered transactions
   useEffect(() => {
-    console.log("TransactionsSection received filtered transactions:", filteredTransactions.length);
-    if (filteredTransactions.length > 0) {
+    console.log("TransactionsSection received filtered transactions:", filteredTransactions?.length || 0);
+    if (filteredTransactions && filteredTransactions.length > 0) {
       console.log("First filtered transaction:", filteredTransactions[0]);
     }
   }, [filteredTransactions]);
@@ -30,10 +33,19 @@ export function TransactionsSection({
           <TrendingUp className="h-4 w-4" />
         </Button>
       </div>
-      <TransactionTable 
-        transactions={filteredTransactions} 
-        currencyCode={currencyCode as "USD" | "EUR" | "GBP"}
-      />
+      
+      {isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : (
+        <TransactionTable 
+          transactions={filteredTransactions || []} 
+          currencyCode={currencyCode as "USD" | "EUR" | "GBP"}
+        />
+      )}
     </div>
   );
 }

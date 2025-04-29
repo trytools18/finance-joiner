@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +31,7 @@ export const Dashboard = () => {
   const [isError, setIsError] = useState(false);
 
   // Fetch organization settings
-  const { data: settings, isLoading: isSettingsLoading } = useQuery({
+  const { data: settings, isLoading: isSettingsLoading, error: settingsError } = useQuery({
     queryKey: ["organization-settings", user?.id],
     queryFn: async () => {
       console.log("Fetching organization settings for user:", user?.id);
@@ -84,15 +85,25 @@ export const Dashboard = () => {
         } as OrganizationSettings;
       }
     },
-    enabled: true, // Always try to fetch, even if user is null
+    enabled: !!user?.id, // Only fetch when user ID is available
     retry: 3,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
 
   // Fetch transactions with better debugging
-  const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
-    queryKey: ["transactions"],
+  const { 
+    data: transactions = [], 
+    isLoading: isTransactionsLoading,
+    error: transactionsError
+  } = useQuery({
+    queryKey: ["transactions", user?.id],
     queryFn: async () => {
-      console.log("Fetching transactions from Dashboard component");
+      console.log("Fetching transactions from Dashboard component for user:", user?.id);
+      if (!user?.id) {
+        console.log("No user found, returning empty transactions array");
+        return [];
+      }
+      
       try {
         const { data, error } = await supabase
           .from("transactions")
@@ -125,23 +136,27 @@ export const Dashboard = () => {
         return [];
       }
     },
+    enabled: !!user?.id, // Only fetch when user ID is available
     retry: 3,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
 
   // Use our real-time hook to get updated transactions
   const currentTransactions = useRealtimeTransactions(user, transactions);
   
-  console.log("Dashboard current transactions count:", currentTransactions.length);
+  console.log("Dashboard current transactions count:", currentTransactions?.length || 0);
 
   // Helper functions for filtering
   const getPartyName = (partyId: string | null): string => {
     if (!partyId) return 'Unknown';
+    if (!parties || parties.length === 0) return 'Loading...';
     const party = parties.find(p => p.id === partyId);
     return party ? party.name : 'Unknown';
   };
 
   const getCategoryName = (transaction: Transaction): string => {
     if (!transaction.category_id) return 'Uncategorized';
+    if (!categories || categories.length === 0) return 'Loading...';
     const category = categories.find(c => c.id === transaction.category_id);
     return category ? category.name : 'Uncategorized';
   };
@@ -157,18 +172,19 @@ export const Dashboard = () => {
     setSearchTerm,
     clearFilters,
     hasActiveFilters
-  } = useTransactionFilters(currentTransactions, getPartyName, getCategoryName);
+  } = useTransactionFilters(currentTransactions || [], getPartyName, getCategoryName);
 
   // Use our stats calculation hook
-  const stats = useTransactionStats(filteredTransactions);
+  const stats = useTransactionStats(filteredTransactions || []);
 
   const formatAmount = (amount: number) => {
     return formatCurrency(amount, settings?.default_currency || 'USD');
   };
 
   const isLoading = isSettingsLoading || isTransactionsLoading;
+  const hasError = !!settingsError || !!transactionsError || isError;
 
-  if (isLoading) {
+  if (isLoading && !hasError) {
     return <DashboardLoading />;
   }
 
@@ -223,17 +239,25 @@ export const Dashboard = () => {
 
       {/* Charts Section */}
       <ChartsSection 
-        transactions={currentTransactions}
-        filteredTransactions={filteredTransactions}
+        transactions={currentTransactions || []}
+        filteredTransactions={filteredTransactions || []}
         dateRange={dateRange}
         currencyCode={settings?.default_currency || 'USD'}
       />
 
       {/* Transactions Section */}
       <TransactionsSection 
-        filteredTransactions={filteredTransactions}
+        filteredTransactions={filteredTransactions || []}
         currencyCode={settings?.default_currency || 'USD'}
+        isLoading={isTransactionsLoading}
       />
+      
+      {hasError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error!</strong>
+          <span className="block sm:inline"> There was a problem loading your data. Please try refreshing the page.</span>
+        </div>
+      )}
     </div>
   );
 };
