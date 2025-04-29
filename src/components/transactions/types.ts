@@ -30,6 +30,16 @@ export interface NewTransactionDialogProps {
   currencyCode?: "USD" | "EUR" | "GBP";
 }
 
+export interface RecurringTransactionDialogProps {
+  defaultPaymentMethod?: PaymentMethod;
+  defaultVatRate?: number;
+  vatRates?: number[];
+  defaultCurrency?: "USD" | "EUR" | "GBP";
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  transactionToEdit?: Transaction | null;
+}
+
 export interface TransactionFormData {
   date: string;
   type: TransactionCategory;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CalendarPlus, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,13 +14,36 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TransactionParty, Category, PaymentMethod, Transaction, TransactionStatus, RecurrenceType, RecurringTransactionStatus } from "./types";
 
+interface RecurringTransactionDialogProps {
+  defaultPaymentMethod?: PaymentMethod;
+  defaultVatRate?: number;
+  vatRates?: number[];
+  defaultCurrency?: "USD" | "EUR" | "GBP";
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  transactionToEdit?: Transaction | null;
+}
+
 export function RecurringTransactionDialog({
   defaultPaymentMethod = "online",
   defaultVatRate = 0.24,
   vatRates = [0.24, 0.14, 0.10, 0],
   defaultCurrency = "USD",
-}) {
-  const [open, setOpen] = useState(false);
+  isOpen,
+  onOpenChange,
+  transactionToEdit = null,
+}: RecurringTransactionDialogProps) {
+  // Use controlled or uncontrolled state based on props
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isOpen !== undefined ? isOpen : internalOpen;
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
+  };
+
   const [date, setDate] = useState<Date>(new Date());
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
   const [intervalValue, setIntervalValue] = useState<string>("1");
@@ -205,13 +229,16 @@ export function RecurringTransactionDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="ml-2">
-          <CalendarPlus className="h-4 w-4 mr-2" />
-          Recurring Transaction
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {/* Show trigger only in uncontrolled mode */}
+      {onOpenChange === undefined && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="ml-2">
+            <CalendarPlus className="h-4 w-4 mr-2" />
+            Recurring Transaction
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Recurring Transaction</DialogTitle>
@@ -310,7 +337,7 @@ export function RecurringTransactionDialog({
             <Button 
               type="button" 
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
             >
               Cancel
             </Button>

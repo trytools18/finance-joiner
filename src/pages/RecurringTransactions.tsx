@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Helmet } from "react-helmet-async"; // Changed to react-helmet-async
+import { Helmet } from "react-helmet-async"; 
 import { Calendar, Plus } from "lucide-react";
 import { RecurringTransactionDialog } from "../components/transactions/RecurringTransactionDialog";
 import { RecurringTransactionsTable } from "../components/transactions/RecurringTransactionsTable";
@@ -12,10 +11,13 @@ import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { PaymentMethod } from "../components/transactions/types";
+import { CalendarPlus } from "lucide-react";
 
 export default function RecurringTransactions() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("recurring");
+  const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["organization-settings", user?.id],
@@ -43,15 +45,26 @@ export default function RecurringTransactions() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Recurring Transactions</h1>
           <div className="flex items-center gap-2">
-            <RecurringTransactionDialog
-              defaultPaymentMethod={settings?.default_payment_method}
-              defaultVatRate={settings?.default_vat_rate}
-              vatRates={settings?.vat_rates as number[]}
-              defaultCurrency={settings?.default_currency}
-            />
+            <Button 
+              variant="outline" 
+              className="ml-2"
+              onClick={() => setIsRecurringDialogOpen(true)}
+            >
+              <CalendarPlus className="h-4 w-4 mr-2" />
+              Recurring Transaction
+            </Button>
             <ProfileMenu />
           </div>
         </div>
+
+        <RecurringTransactionDialog
+          defaultPaymentMethod={settings?.default_payment_method as PaymentMethod}
+          defaultVatRate={settings?.default_vat_rate}
+          vatRates={settings?.vat_rates as number[]}
+          defaultCurrency={settings?.default_currency}
+          isOpen={isRecurringDialogOpen}
+          onOpenChange={setIsRecurringDialogOpen}
+        />
 
         <Alert className="bg-blue-50 border-blue-200">
           <InfoIcon className="h-4 w-4 text-blue-500" />

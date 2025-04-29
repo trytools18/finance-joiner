@@ -192,7 +192,7 @@ export function RecurringTransactionsTable({ currencyCode = 'USD' }: RecurringTr
           defaultPaymentMethod={selectedTransaction.payment_method}
           defaultCurrency={currencyCode as "USD" | "EUR" | "GBP" | undefined}
           isOpen={editDialogOpen}
-          onOpenChange={() => setEditDialogOpen(false)}
+          onOpenChange={(open) => setEditDialogOpen(open)}
         />
       )}
 
