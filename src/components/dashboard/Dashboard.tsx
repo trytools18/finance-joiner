@@ -85,12 +85,12 @@ export const Dashboard = () => {
         } as OrganizationSettings;
       }
     },
-    enabled: !!user?.id, // Only fetch when user ID is available
+    enabled: !!user?.id,
     retry: 3,
     retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
 
-  // Fetch transactions with better debugging
+  // Fetch transactions with improved error handling and debugging
   const { 
     data: transactions = [], 
     isLoading: isTransactionsLoading,
@@ -98,35 +98,35 @@ export const Dashboard = () => {
   } = useQuery({
     queryKey: ["transactions", user?.id],
     queryFn: async () => {
-      console.log("Fetching transactions from Dashboard component for user:", user?.id);
+      console.log("Dashboard: Starting transaction fetch for user:", user?.id);
       if (!user?.id) {
-        console.log("No user found, returning empty transactions array");
+        console.log("Dashboard: No user ID available");
         return [];
       }
       
       try {
+        console.log("Dashboard: Querying transactions table...");
         const { data, error } = await supabase
           .from("transactions")
           .select("*")
+          .eq("user_id", user.id)
           .order("date", { ascending: false });
 
         if (error) {
-          console.error("Error fetching transactions:", error);
+          console.error("Dashboard: Supabase error fetching transactions:", error);
           throw error;
         }
         
-        console.log("Dashboard retrieved transactions:", data ? data.length : 0);
+        console.log("Dashboard: Successfully retrieved transactions:", data ? data.length : 0);
         if (data && data.length > 0) {
-          console.log("First transaction:", data[0]);
-          console.log("Transaction types:", data.map(t => t.type).slice(0, 5));
-          console.log("Transaction status values:", data.map(t => t.status).slice(0, 5));
+          console.log("Dashboard: First transaction sample:", data[0]);
         } else {
-          console.log("No transactions found in the database");
+          console.log("Dashboard: No transactions found for user:", user.id);
         }
         
         return data as Transaction[];
       } catch (err) {
-        console.error("Error in transactions fetch:", err);
+        console.error("Dashboard: Exception in transactions fetch:", err);
         setIsError(true);
         toast({
           title: "Error fetching transactions",
@@ -136,7 +136,7 @@ export const Dashboard = () => {
         return [];
       }
     },
-    enabled: !!user?.id, // Only fetch when user ID is available
+    enabled: !!user?.id,
     retry: 3,
     retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
@@ -144,7 +144,7 @@ export const Dashboard = () => {
   // Use our real-time hook to get updated transactions
   const currentTransactions = useRealtimeTransactions(user, transactions);
   
-  console.log("Dashboard current transactions count:", currentTransactions?.length || 0);
+  console.log("Dashboard: Final transactions count:", currentTransactions?.length || 0);
 
   // Helper functions for filtering
   const getPartyName = (partyId: string | null): string => {

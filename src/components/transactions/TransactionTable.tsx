@@ -1,5 +1,5 @@
+
 import { Table, TableHeader, TableRow } from "@/components/ui/table";
-import { DndContext } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { Transaction, SelectedTransactionsActions } from "./types";
@@ -17,7 +17,7 @@ import { useState } from "react";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
 import { VATTracker } from "./VATTracker";
 import { SelectedTransactionsToolbar } from "./table/SelectedTransactionsToolbar";
-import { DragEndEvent, MouseSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DragEndEvent, MouseSensor, useSensor, useSensors, DndContext } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { createTableColumns } from "./table/TableColumns";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -134,7 +134,6 @@ export const TransactionTable = ({
       }
     } else {
       setSortField(field);
-      // For dates, we want newest first by default (desc)
       setSortDirection(field === "date" ? "desc" : "asc");
     }
   };
@@ -152,7 +151,6 @@ export const TransactionTable = ({
       let valueA: string | number;
       let valueB: string | number;
 
-      // For text-based fields, normalize strings by converting to lowercase
       if (sortField === "party") {
         valueA = getPartyName(a.party).toLowerCase();
         valueB = getPartyName(b.party).toLowerCase();
@@ -171,7 +169,6 @@ export const TransactionTable = ({
         return 0;
       }
 
-      // Case-insensitive string comparison
       return sortDirection === "asc" 
         ? valueA < valueB ? -1 : valueA > valueB ? 1 : 0
         : valueB < valueA ? -1 : valueB > valueA ? 1 : 0;
@@ -351,12 +348,12 @@ export const TransactionTable = ({
       
       <div className="rounded-md border overflow-x-auto">
         <div className="min-w-[800px]">
-          <Table>
-            <DndContext
-              sensors={sensors}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToHorizontalAxis]}
-            >
+          <DndContext
+            sensors={sensors}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToHorizontalAxis]}
+          >
+            <Table>
               <TableHeader>
                 <TableRow>
                   <SortableContext items={columns} strategy={horizontalListSortingStrategy}>
@@ -376,8 +373,8 @@ export const TransactionTable = ({
                 selectedTransactions={selectedTransactions}
                 isSelectionMode={isSelectionMode}
               />
-            </DndContext>
-          </Table>
+            </Table>
+          </DndContext>
         </div>
       </div>
 
@@ -393,7 +390,6 @@ export const TransactionTable = ({
             </PaginationItem>
             
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              // Logic to show pagination numbers around current page
               let pageNum;
               if (totalPages <= 5) {
                 pageNum = i + 1;

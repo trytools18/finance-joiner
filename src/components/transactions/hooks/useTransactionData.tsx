@@ -2,22 +2,30 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TransactionParty, Category, Transaction, TransactionStatus } from "../types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useTransactionData = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: parties = [], error: partiesError } = useQuery({
-    queryKey: ["transaction-parties"],
+    queryKey: ["transaction-parties", user?.id],
     queryFn: async () => {
-      console.log("Fetching transaction parties...");
+      console.log("useTransactionData: Fetching transaction parties for user:", user?.id);
+      if (!user?.id) {
+        console.log("useTransactionData: No user ID available for parties");
+        return [];
+      }
+
       try {
         const { data, error } = await supabase
           .from("transaction_parties")
-          .select("*");
+          .select("*")
+          .eq("user_id", user.id);
         
         if (error) {
-          console.error("Error fetching parties:", error);
+          console.error("useTransactionData: Error fetching parties:", error);
           toast({
             title: "Error fetching parties",
             description: "Please try again later or refresh the page",
@@ -27,33 +35,40 @@ export const useTransactionData = () => {
         }
         
         if (!data) {
-          console.log("No transaction parties found");
+          console.log("useTransactionData: No transaction parties found");
           return [];
         }
         
-        console.log("Successfully fetched parties:", data.length);
+        console.log("useTransactionData: Successfully fetched parties:", data.length);
         return data as TransactionParty[];
       } catch (err) {
-        console.error("Exception in parties fetch:", err);
+        console.error("useTransactionData: Exception in parties fetch:", err);
         return [];
       }
     },
+    enabled: !!user?.id,
     retry: 3,
     retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: categories = [], error: categoriesError } = useQuery({
-    queryKey: ["transaction-categories"],
+    queryKey: ["transaction-categories", user?.id],
     queryFn: async () => {
-      console.log("Fetching transaction categories...");
+      console.log("useTransactionData: Fetching transaction categories for user:", user?.id);
+      if (!user?.id) {
+        console.log("useTransactionData: No user ID available for categories");
+        return [];
+      }
+
       try {
         const { data, error } = await supabase
           .from("transaction_categories")
-          .select("*");
+          .select("*")
+          .eq("user_id", user.id);
         
         if (error) {
-          console.error("Error fetching categories:", error);
+          console.error("useTransactionData: Error fetching categories:", error);
           toast({
             title: "Error fetching categories",
             description: "Please try again later or refresh the page",
@@ -63,50 +78,22 @@ export const useTransactionData = () => {
         }
 
         if (!data) {
-          console.log("No transaction categories found");
+          console.log("useTransactionData: No transaction categories found");
           return [];
         }
         
-        console.log("Successfully fetched categories:", data.length);
+        console.log("useTransactionData: Successfully fetched categories:", data.length);
         return data as Category[];
       } catch (err) {
-        console.error("Exception in categories fetch:", err);
+        console.error("useTransactionData: Exception in categories fetch:", err);
         return [];
       }
     },
+    enabled: !!user?.id,
     retry: 3,
     retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
-
-  // Direct transaction fetcher with improved error handling
-  const fetchTransactions = async () => {
-    console.log("Directly fetching transactions for debugging...");
-    try {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .order("date", { ascending: false });
-      
-      if (error) {
-        console.error("Debug fetch error:", error);
-        return [];
-      }
-      
-      console.log("Debug fetch found transactions:", data?.length || 0);
-      if (data && data.length > 0) {
-        console.log("Sample transaction:", data[0]);
-      }
-      
-      return data;
-    } catch (err) {
-      console.error("Exception in debug fetch:", err);
-      return [];
-    }
-  };
-
-  // Call it immediately for debugging
-  fetchTransactions();
 
   // Rest of the mutation functions
   const updateStatusMutation = useMutation({
