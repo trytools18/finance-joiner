@@ -16,19 +16,34 @@ import { TransactionsSection } from "./sections/TransactionsSection";
 import { useTransactionStats } from "./hooks/useTransactionStats";
 import { useRealtimeTransactions } from "./hooks/useRealtimeTransactions";
 import { RecurringTransactionDialog } from "../transactions/RecurringTransactionDialog";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
 
 export const Dashboard = () => {
-  const { user } = useAuth();
-  const { parties, categories, transactions, isLoading: isDataLoading } = useTransactionData();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  console.log("Dashboard: user state:", { user: !!user, userId: user?.id, authLoading });
+
+  // Fetch transaction data
+  const { 
+    parties, 
+    categories, 
+    transactions, 
+    isLoading: isDataLoading, 
+    hasError: dataError,
+    partiesError,
+    categoriesError,
+    transactionsError
+  } = useTransactionData();
 
   // Fetch organization settings
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
     queryFn: async () => {
+      console.log("Fetching organization settings for user:", user?.id);
       if (!user?.id) {
         return {
           default_currency: 'USD',
@@ -44,7 +59,12 @@ export const Dashboard = () => {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching organization settings:", error);
+        throw error;
+      }
+      
+      console.log("Organization settings fetched:", !!data);
       
       if (!data) {
         return {
@@ -58,6 +78,7 @@ export const Dashboard = () => {
       return data as OrganizationSettings;
     },
     enabled: !!user?.id,
+    staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
   // Use real-time hook to get updated transactions
@@ -92,10 +113,38 @@ export const Dashboard = () => {
   // Use stats calculation hook
   const stats = useTransactionStats(filteredTransactions || []);
 
-  const isLoading = isSettingsLoading || isDataLoading;
+  const isLoading = authLoading || isSettingsLoading || isDataLoading;
 
+  console.log("Dashboard loading states:", {
+    authLoading,
+    isSettingsLoading,
+    isDataLoading,
+    totalLoading: isLoading,
+    hasDataError: !!dataError,
+    transactionsCount: currentTransactions?.length || 0
+  });
+
+  // Show loading screen
   if (isLoading) {
+    console.log("Dashboard: Showing loading screen");
     return <DashboardLoading />;
+  }
+
+  // Show error if there are data errors
+  if (dataError) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error loading data. Please try refreshing the page.
+            {partiesError && <div>Parties: {partiesError.message}</div>}
+            {categoriesError && <div>Categories: {categoriesError.message}</div>}
+            {transactionsError && <div>Transactions: {transactionsError.message}</div>}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
@@ -159,7 +208,7 @@ export const Dashboard = () => {
       <TransactionsSection 
         filteredTransactions={filteredTransactions || []}
         currencyCode={settings?.default_currency || 'USD'}
-        isLoading={isDataLoading}
+        isLoading={false}
       />
     </div>
   );

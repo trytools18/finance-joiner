@@ -44,6 +44,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     updateNewUserState
   } = useAuthFunctions();
 
+  console.log("AuthContext: Current state:", {
+    user: !!authState.user,
+    userId: authState.user?.id,
+    loading: authState.loading,
+    isNewUser,
+    onboardingCompleted
+  });
+
   // Check if onboarding is completed in localStorage
   useEffect(() => {
     const onboardingStatus = localStorage.getItem("onboardingCompleted");
@@ -65,11 +73,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log("AuthContext: Setting up auth listeners");
+    
     // Check active sessions and sets the user
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log("AuthContext: Initial session check:", !!session);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       
       if (user) {
+        console.log("AuthContext: User found, checking onboarding status");
         try {
           const { data: orgSettings } = await supabase
             .from("organization_settings")
@@ -78,11 +90,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .maybeSingle();
           
           if (orgSettings) {
+            console.log("AuthContext: Organization settings found, onboarding completed");
             localStorage.setItem("onboardingCompleted", "true");
             updateOnboardingState(true);
             updateNewUserState(false);
           } else {
-            const newUserFlag = localStorage.getItem("new_user") === "true";
+            console.log("AuthContext: No organization settings, user is new");
             updateNewUserState(true);
             updateOnboardingState(false);
           }
@@ -96,12 +109,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Listen for changes on auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("AuthContext: Auth state changed:", event, !!session);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       
       setAuthState({ user, loading: false });
 
       // Handle different auth events
       if (event === "SIGNED_IN" && user) {
+        console.log("AuthContext: User signed in, checking onboarding");
         try {
           const { data: orgSettings } = await supabase
             .from("organization_settings")
@@ -110,13 +125,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .maybeSingle();
           
           if (orgSettings) {
+            console.log("AuthContext: Existing user, redirecting to dashboard");
             localStorage.setItem("onboardingCompleted", "true");
             localStorage.removeItem("new_user");
             updateOnboardingState(true);
             updateNewUserState(false);
             navigate("/");
           } else {
-            const newUserFlag = localStorage.getItem("new_user") === "true";
+            console.log("AuthContext: New user, redirecting to onboarding");
             updateNewUserState(true);
             updateOnboardingState(false);
             navigate("/onboarding");
@@ -127,12 +143,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (event === "SIGNED_OUT") {
+        console.log("AuthContext: User signed out");
         updateNewUserState(false);
         updateOnboardingState(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log("AuthContext: Cleaning up auth listener");
+      subscription.unsubscribe();
+    };
   }, [navigate, updateNewUserState, updateOnboardingState]);
 
   return (

@@ -10,42 +10,68 @@ export const useTransactionData = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  console.log("useTransactionData: user ID:", user?.id);
+
   const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
     queryKey: ["transaction-parties", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      console.log("Fetching parties for user:", user?.id);
+      if (!user?.id) {
+        console.log("No user ID, returning empty parties");
+        return [];
+      }
 
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
         .eq("user_id", user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching parties:", error);
+        throw error;
+      }
+      console.log("Fetched parties:", data?.length || 0);
       return data as TransactionParty[];
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
   });
 
   const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ["transaction-categories", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      console.log("Fetching categories for user:", user?.id);
+      if (!user?.id) {
+        console.log("No user ID, returning empty categories");
+        return [];
+      }
 
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*")
         .eq("user_id", user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching categories:", error);
+        throw error;
+      }
+      console.log("Fetched categories:", data?.length || 0);
       return data as Category[];
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
   });
 
   const { data: transactions = [], isLoading: transactionsLoading, error: transactionsError } = useQuery({
     queryKey: ["transactions", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      console.log("Fetching transactions for user:", user?.id);
+      if (!user?.id) {
+        console.log("No user ID, returning empty transactions");
+        return [];
+      }
 
       const { data, error } = await supabase
         .from("transactions")
@@ -53,10 +79,34 @@ export const useTransactionData = () => {
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching transactions:", error);
+        throw error;
+      }
+      console.log("Fetched transactions:", data?.length || 0);
       return data as Transaction[];
     },
     enabled: !!user?.id,
+    staleTime: 30 * 1000, // 30 seconds
+    retry: 3,
+  });
+
+  // Log all errors
+  if (partiesError) console.error("Parties error:", partiesError);
+  if (categoriesError) console.error("Categories error:", categoriesError);
+  if (transactionsError) console.error("Transactions error:", transactionsError);
+
+  const isLoading = partiesLoading || categoriesLoading || transactionsLoading;
+  const hasError = partiesError || categoriesError || transactionsError;
+
+  console.log("useTransactionData summary:", {
+    user: !!user,
+    userId: user?.id,
+    isLoading,
+    hasError: !!hasError,
+    partiesCount: parties.length,
+    categoriesCount: categories.length,
+    transactionsCount: transactions.length
   });
 
   const updateStatusMutation = useMutation({
@@ -150,7 +200,8 @@ export const useTransactionData = () => {
     parties,
     categories,
     transactions,
-    isLoading: partiesLoading || categoriesLoading || transactionsLoading,
+    isLoading,
+    hasError,
     partiesError,
     categoriesError,
     transactionsError,

@@ -19,11 +19,12 @@ export function TransactionsSection({
 }: TransactionsSectionProps) {
   // Add debugging to track filtered transactions
   useEffect(() => {
-    console.log("TransactionsSection received filtered transactions:", filteredTransactions?.length || 0);
-    if (filteredTransactions && filteredTransactions.length > 0) {
-      console.log("First filtered transaction:", filteredTransactions[0]);
-    }
-  }, [filteredTransactions]);
+    console.log("TransactionsSection: Received transactions:", {
+      count: filteredTransactions?.length || 0,
+      isLoading,
+      sampleTransaction: filteredTransactions?.[0]?.id || 'none'
+    });
+  }, [filteredTransactions, isLoading]);
 
   return (
     <div className="space-y-4">
