@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TransactionParty, Category, Transaction, TransactionStatus } from "../types";
@@ -14,11 +15,12 @@ export const useTransactionData = () => {
   const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
     queryKey: ["transaction-parties", user?.id],
     queryFn: async () => {
-      console.log("Fetching parties...");
+      console.log("Fetching parties for user:", user?.id);
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
-        .eq("user_id", user!.id);
+        .eq("user_id", user!.id)
+        .order("name");
       
       if (error) {
         console.error("Parties fetch error:", error);
@@ -34,11 +36,12 @@ export const useTransactionData = () => {
   const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ["transaction-categories", user?.id],
     queryFn: async () => {
-      console.log("Fetching categories...");
+      console.log("Fetching categories for user:", user?.id);
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*")
-        .eq("user_id", user!.id);
+        .eq("user_id", user!.id)
+        .order("name");
       
       if (error) {
         console.error("Categories fetch error:", error);
@@ -54,7 +57,7 @@ export const useTransactionData = () => {
   const { data: transactions = [], isLoading: transactionsLoading, error: transactionsError } = useQuery({
     queryKey: ["transactions", user?.id],
     queryFn: async () => {
-      console.log("Fetching transactions...");
+      console.log("Fetching transactions for user:", user?.id);
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
@@ -88,12 +91,13 @@ export const useTransactionData = () => {
       const { error } = await supabase
         .from("transactions")
         .update({ status })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", user!.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
       toast({
         title: "Status updated",
         description: "Transaction status has been updated successfully.",
@@ -124,13 +128,14 @@ export const useTransactionData = () => {
           vat_clearable, 
           description 
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", user!.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["vat-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["vat-summary", user?.id] });
       toast({
         title: "VAT settings updated",
         description: "Transaction VAT settings have been updated successfully.",
@@ -150,12 +155,13 @@ export const useTransactionData = () => {
       const { error } = await supabase
         .from("transactions")
         .delete()
-        .in("id", ids);
+        .in("id", ids)
+        .eq("user_id", user!.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
       toast({
         title: "Transactions deleted",
         description: "Selected transactions have been deleted successfully.",

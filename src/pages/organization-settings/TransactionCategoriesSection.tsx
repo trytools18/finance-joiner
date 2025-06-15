@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,17 +28,26 @@ export function TransactionCategoriesSection() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const { data: categories = [], isLoading } = useQuery({
-    queryKey: ['transaction-categories'],
+  console.log("TransactionCategoriesSection: user:", user?.id);
+
+  const { data: categories = [], isLoading, error } = useQuery({
+    queryKey: ['transaction-categories', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) {
+        console.log("TransactionCategoriesSection: No user ID");
+        return [];
+      }
+      
+      console.log("TransactionCategoriesSection: Fetching categories for user:", user.id);
       
       const { data, error } = await supabase
         .from('transaction_categories')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('name');
       
       if (error) {
+        console.error("TransactionCategoriesSection: Error loading categories:", error);
         toast({
           title: "Error loading categories",
           description: error.message,
@@ -46,30 +56,37 @@ export function TransactionCategoriesSection() {
         throw error;
       }
       
+      console.log("TransactionCategoriesSection: Categories loaded:", data?.length || 0);
       return data as Category[];
     },
     enabled: !!user?.id,
+    retry: 1,
   });
 
   const addCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!user?.id) throw new Error("User not authenticated");
       
+      console.log("Adding category:", name, "type:", activeTab);
+      
       const { data, error } = await supabase
         .from('transaction_categories')
         .insert({
-          name,
+          name: name.trim(),
           type: activeTab,
           user_id: user.id,
         })
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding category:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-categories', user?.id] });
       setNewCategory('');
       toast({
         title: "Category added",
@@ -77,6 +94,7 @@ export function TransactionCategoriesSection() {
       });
     },
     onError: (error: any) => {
+      console.error("Add category error:", error);
       toast({
         title: "Error adding category",
         description: error.message,
@@ -87,15 +105,21 @@ export function TransactionCategoriesSection() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      console.log("Updating category:", id, "to:", name);
+      
       const { error } = await supabase
         .from('transaction_categories')
-        .update({ name })
-        .eq('id', id);
+        .update({ name: name.trim() })
+        .eq('id', id)
+        .eq('user_id', user!.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating category:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-categories', user?.id] });
       setEditingCategory(null);
       toast({
         title: "Category updated",
@@ -103,6 +127,7 @@ export function TransactionCategoriesSection() {
       });
     },
     onError: (error: any) => {
+      console.error("Update category error:", error);
       toast({
         title: "Error updating category",
         description: error.message,
@@ -113,21 +138,28 @@ export function TransactionCategoriesSection() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log("Deleting category:", id);
+      
       const { error } = await supabase
         .from('transaction_categories')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user!.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error deleting category:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-categories', user?.id] });
       toast({
         title: "Category deleted",
         description: "Category has been deleted successfully.",
       });
     },
     onError: (error: any) => {
+      console.error("Delete category error:", error);
       toast({
         title: "Error deleting category",
         description: error.message,
@@ -180,6 +212,19 @@ export function TransactionCategoriesSection() {
     (category) => category.type === activeTab
   );
 
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Transaction Categories</CardTitle>
+          <CardDescription className="text-red-600">
+            Error loading categories: {error.message}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -203,7 +248,7 @@ export function TransactionCategoriesSection() {
                 onChange={(e) => setNewCategory(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
               />
-              <Button onClick={handleAddCategory} size="icon">
+              <Button onClick={handleAddCategory} size="icon" disabled={addCategoryMutation.isPending}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -217,7 +262,7 @@ export function TransactionCategoriesSection() {
                 onChange={(e) => setNewCategory(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
               />
-              <Button onClick={handleAddCategory} size="icon">
+              <Button onClick={handleAddCategory} size="icon" disabled={addCategoryMutation.isPending}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -247,7 +292,12 @@ export function TransactionCategoriesSection() {
                         onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
                         autoFocus
                       />
-                      <Button onClick={saveEdit} size="icon" variant="ghost">
+                      <Button 
+                        onClick={saveEdit} 
+                        size="icon" 
+                        variant="ghost"
+                        disabled={updateCategoryMutation.isPending}
+                      >
                         <Save className="h-4 w-4" />
                       </Button>
                       <Button onClick={cancelEditing} size="icon" variant="ghost">
@@ -270,6 +320,7 @@ export function TransactionCategoriesSection() {
                           size="icon"
                           variant="ghost"
                           className="text-destructive"
+                          disabled={deleteCategoryMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
