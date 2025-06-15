@@ -80,42 +80,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log("AuthProvider: Setting up auth state check and listener");
     
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       console.log("Auth session check - User found:", !!user);
       
       if (user) {
         console.log("Authenticated user:", user.email);
-        // Remove this toast to prevent duplicate authentication messages
-        // toast({
-        //   title: "Authenticated",
-        //   description: `Logged in as ${user.email}`,
-        // });
+        
+        // Check if user has completed onboarding by looking at organization_settings
+        try {
+          const { data: orgSettings } = await supabase
+            .from("organization_settings")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          
+          if (orgSettings) {
+            console.log("User has organization settings, onboarding completed");
+            localStorage.setItem("onboardingCompleted", "true");
+            updateOnboardingState(true);
+            updateNewUserState(false);
+          } else {
+            console.log("User has no organization settings");
+            // Only set as new user if there's a new_user flag
+            const newUserFlag = localStorage.getItem("new_user") === "true";
+            if (newUserFlag) {
+              console.log("New user flag found, setting as new user");
+              updateNewUserState(true);
+              updateOnboardingState(false);
+            } else {
+              console.log("No new user flag, assuming existing user who hasn't completed onboarding");
+              updateNewUserState(true);
+              updateOnboardingState(false);
+            }
+          }
+        } catch (error) {
+          console.error("Error checking organization settings:", error);
+        }
       }
       
       setAuthState({
         user,
         loading: false,
       });
-
-      // Check if there's a "new_user" flag in localStorage
-      const newUserFlag = localStorage.getItem("new_user") === "true";
-      console.log("New user flag in localStorage:", newUserFlag);
-      
-      // If user exists but onboarding not completed, they should be considered a new user
-      if (user && !localStorage.getItem("onboardingCompleted")) {
-        console.log("User exists but onboarding not completed, setting as new user");
-        updateNewUserState(true);
-        // If we're not already on the onboarding page, redirect there
-        if (window.location.pathname !== "/onboarding") {
-          console.log("Redirecting to onboarding from session check");
-          navigate("/onboarding");
-        }
-      }
     });
 
     // Listen for changes on auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state change event:", event);
       const user = session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null;
       
@@ -130,28 +141,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading: false,
       });
 
-      // If this is a sign-up or sign-in event
+      // Handle different auth events
       if (event === "SIGNED_IN") {
         console.log("Sign in event detected");
         
-        // Check if onboarding has been completed
-        const onboardingComplete = localStorage.getItem("onboardingCompleted") === "true";
-        console.log("Onboarding completed status:", onboardingComplete);
-        
-        if (!onboardingComplete) {
-          console.log("Onboarding not completed, setting as new user");
-          localStorage.setItem("new_user", "true");
-          updateNewUserState(true);
-          
-          // Redirect to onboarding
-          console.log("Redirecting to onboarding from auth change");
-          navigate("/onboarding");
+        if (user) {
+          // Check if user has organization settings to determine onboarding status
+          try {
+            const { data: orgSettings } = await supabase
+              .from("organization_settings")
+              .select("id")
+              .eq("user_id", user.id)
+              .maybeSingle();
+            
+            if (orgSettings) {
+              console.log("User has completed onboarding, redirecting to dashboard");
+              localStorage.setItem("onboardingCompleted", "true");
+              localStorage.removeItem("new_user");
+              updateOnboardingState(true);
+              updateNewUserState(false);
+              navigate("/");
+            } else {
+              // Check if this is a new signup or existing user
+              const newUserFlag = localStorage.getItem("new_user") === "true";
+              if (newUserFlag) {
+                console.log("New user needs onboarding");
+                updateNewUserState(true);
+                updateOnboardingState(false);
+                navigate("/onboarding");
+              } else {
+                console.log("Existing user without organization settings, needs onboarding");
+                updateNewUserState(true);
+                updateOnboardingState(false);
+                navigate("/onboarding");
+              }
+            }
+          } catch (error) {
+            console.error("Error checking organization settings:", error);
+          }
         }
       }
       
       // Handle SIGNED_OUT events
       if (event === "SIGNED_OUT") {
         console.log("User signed out, cleaning up state");
+        updateNewUserState(false);
+        updateOnboardingState(false);
       }
     });
 

@@ -10,14 +10,41 @@ export function useAuthFunctions() {
   const signIn = async (email: string, password: string) => {
     try {
       console.log("Attempting sign in for:", email);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      console.log("Sign in successful");
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       
-      toast({
-        title: "Sign in successful",
-        description: "Welcome back!",
-      });
+      if (error) throw error;
+      
+      console.log("Sign in successful", data);
+      
+      // For existing users signing in, check if they have organization settings
+      if (data.user) {
+        const { data: orgSettings } = await supabase
+          .from("organization_settings")
+          .select("id")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+        
+        // If user has organization settings, they've completed onboarding
+        if (orgSettings) {
+          console.log("User has completed onboarding previously");
+          localStorage.setItem("onboardingCompleted", "true");
+          setOnboardingCompleted(true);
+          setIsNewUser(false);
+        } else {
+          // User exists but hasn't completed onboarding
+          console.log("User exists but hasn't completed onboarding");
+          setIsNewUser(true);
+          setOnboardingCompleted(false);
+        }
+      }
+      
+      // Only show toast if login is successful and there's no onboarding needed
+      if (onboardingCompleted) {
+        toast({
+          title: "Sign in successful",
+          description: "Welcome back!",
+        });
+      }
     } catch (error: any) {
       console.error("Sign in error:", error);
       
@@ -31,7 +58,7 @@ export function useAuthFunctions() {
       } else {
         toast({
           title: "Error signing in",
-          description: error.message,
+          description: error.message || "An error occurred during sign in",
           variant: "destructive",
         });
       }
@@ -52,9 +79,13 @@ export function useAuthFunctions() {
       
       if (error) throw error;
       
-      // Mark as new user
-      localStorage.setItem("new_user", "true");
-      setIsNewUser(true);
+      // Mark as new user only for actual signups
+      if (data.user && !data.user.email_confirmed_at) {
+        console.log("New user signed up, marking for onboarding");
+        localStorage.setItem("new_user", "true");
+        setIsNewUser(true);
+        setOnboardingCompleted(false);
+      }
       
       console.log("Sign up successful", data);
       
@@ -66,7 +97,7 @@ export function useAuthFunctions() {
       console.error("Sign up error:", error);
       toast({
         title: "Error signing up",
-        description: error.message,
+        description: error.message || "An error occurred during sign up",
         variant: "destructive",
       });
       throw error;
@@ -78,13 +109,22 @@ export function useAuthFunctions() {
       console.log("useAuthFunctions: Attempting sign out");
       
       // First, call the Supabase sign-out method
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const { error } = await supabase.auth.signOut({
+        scope: 'local'
+      });
       
-      // Clear any auth-related items from localStorage (belt and suspenders approach)
+      if (error) {
+        console.error("Sign out Supabase error:", error);
+        throw error;
+      }
+      
+      // Clear any auth-related items from localStorage
       localStorage.removeItem("supabase.auth.token");
       localStorage.removeItem("sb-access-token");
       localStorage.removeItem("sb-refresh-token");
+      localStorage.removeItem("supabase.auth.expires_at");
+      localStorage.removeItem("supabase.auth.data");
+      localStorage.removeItem("new_user");
       
       // Keep onboardingCompleted status as it's not authentication-related
       
@@ -94,6 +134,8 @@ export function useAuthFunctions() {
         title: "Signed out successfully",
         description: "You have been logged out from your account",
       });
+      
+      return { success: true };
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast({

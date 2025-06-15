@@ -17,11 +17,19 @@ const Index = () => {
     }
   }, [user, isNewUser, onboardingCompleted, navigate]);
 
-  if (user) {
+  // Show dashboard for authenticated users who have completed onboarding
+  if (user && onboardingCompleted) {
     return <Dashboard />;
   }
 
-  return <LandingPage />;
+  // Show landing page for unauthenticated users
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  // For authenticated users who haven't completed onboarding, 
+  // the useEffect above will handle the redirect
+  return <div>Loading...</div>;
 };
 
 export default Index;
