@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CalendarPlus, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,17 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TransactionFormFields } from "./TransactionFormFields";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TransactionParty, Category, PaymentMethod, Transaction, TransactionStatus, RecurrenceType, RecurringTransactionStatus } from "./types";
-
-interface RecurringTransactionDialogProps {
-  defaultPaymentMethod?: PaymentMethod;
-  defaultVatRate?: number;
-  vatRates?: number[];
-  defaultCurrency?: "USD" | "EUR" | "GBP";
-  isOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  transactionToEdit?: Transaction | null;
-}
+import { TransactionParty, Category, PaymentMethod, Transaction, TransactionStatus, RecurrenceType, RecurringTransactionStatus, RecurringTransactionDialogProps } from "./types";
 
 export function RecurringTransactionDialog({
   defaultPaymentMethod = "online",
@@ -218,7 +207,7 @@ export function RecurringTransactionDialog({
 
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
-      setOpen(false);
+      handleOpenChange(false);
     } catch (error: any) {
       toast({
         title: "Error generating transactions",
