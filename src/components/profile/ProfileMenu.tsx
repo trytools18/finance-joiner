@@ -22,13 +22,19 @@ export function ProfileMenu() {
     try {
       setIsLoading(true);
       console.log("ProfileMenu: Initiating sign out process");
+      
+      // Perform sign out
       await signOut();
-      console.log("ProfileMenu: Sign out successful, navigation should happen in AuthContext");
-      // Navigation is handled in the AuthContext signOut method
+      
+      console.log("ProfileMenu: Sign out successful, forcing navigation");
+      
+      // Force a complete page reload to ensure clean state
+      window.location.href = "/index";
+      
     } catch (error) {
       console.error("ProfileMenu: Error during sign out:", error);
-      // If there's an error, attempt to navigate anyway
-      navigate("/index");
+      // Force navigation even on error
+      window.location.href = "/index";
     } finally {
       setIsLoading(false);
     }

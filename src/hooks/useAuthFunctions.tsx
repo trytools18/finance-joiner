@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -108,17 +109,7 @@ export function useAuthFunctions() {
     try {
       console.log("useAuthFunctions: Attempting sign out");
       
-      // First, call the Supabase sign-out method
-      const { error } = await supabase.auth.signOut({
-        scope: 'local'
-      });
-      
-      if (error) {
-        console.error("Sign out Supabase error:", error);
-        throw error;
-      }
-      
-      // Clear any auth-related items from localStorage
+      // Clear localStorage items first
       localStorage.removeItem("supabase.auth.token");
       localStorage.removeItem("sb-access-token");
       localStorage.removeItem("sb-refresh-token");
@@ -126,7 +117,22 @@ export function useAuthFunctions() {
       localStorage.removeItem("supabase.auth.data");
       localStorage.removeItem("new_user");
       
-      // Keep onboardingCompleted status as it's not authentication-related
+      // Clear all supabase auth related items
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Call the Supabase sign-out method with global scope
+      const { error } = await supabase.auth.signOut({
+        scope: 'global'
+      });
+      
+      if (error) {
+        console.error("Sign out Supabase error:", error);
+        // Don't throw error, continue with cleanup
+      }
       
       console.log("useAuthFunctions: Sign out successful");
       
@@ -143,7 +149,8 @@ export function useAuthFunctions() {
         description: error.message || "There was a problem signing you out",
         variant: "destructive",
       });
-      throw error;
+      // Don't throw error, allow the process to continue
+      return { success: false };
     }
   };
 
