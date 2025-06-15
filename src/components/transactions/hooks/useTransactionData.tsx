@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TransactionParty, Category, Transaction, TransactionStatus } from "../types";
@@ -9,93 +10,55 @@ export const useTransactionData = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const { data: parties = [], error: partiesError } = useQuery({
+  const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
     queryKey: ["transaction-parties", user?.id],
     queryFn: async () => {
-      console.log("useTransactionData: Fetching transaction parties for user:", user?.id);
-      if (!user?.id) {
-        console.log("useTransactionData: No user ID available for parties");
-        return [];
-      }
+      if (!user?.id) return [];
 
-      try {
-        const { data, error } = await supabase
-          .from("transaction_parties")
-          .select("*")
-          .eq("user_id", user.id);
-        
-        if (error) {
-          console.error("useTransactionData: Error fetching parties:", error);
-          toast({
-            title: "Error fetching parties",
-            description: "Please try again later or refresh the page",
-            variant: "destructive",
-          });
-          throw error;
-        }
-        
-        if (!data) {
-          console.log("useTransactionData: No transaction parties found");
-          return [];
-        }
-        
-        console.log("useTransactionData: Successfully fetched parties:", data.length);
-        return data as TransactionParty[];
-      } catch (err) {
-        console.error("useTransactionData: Exception in parties fetch:", err);
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("transaction_parties")
+        .select("*")
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      return data as TransactionParty[];
     },
     enabled: !!user?.id,
-    retry: 3,
-    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
-    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: categories = [], error: categoriesError } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ["transaction-categories", user?.id],
     queryFn: async () => {
-      console.log("useTransactionData: Fetching transaction categories for user:", user?.id);
-      if (!user?.id) {
-        console.log("useTransactionData: No user ID available for categories");
-        return [];
-      }
+      if (!user?.id) return [];
 
-      try {
-        const { data, error } = await supabase
-          .from("transaction_categories")
-          .select("*")
-          .eq("user_id", user.id);
-        
-        if (error) {
-          console.error("useTransactionData: Error fetching categories:", error);
-          toast({
-            title: "Error fetching categories",
-            description: "Please try again later or refresh the page",
-            variant: "destructive",
-          });
-          throw error;
-        }
-
-        if (!data) {
-          console.log("useTransactionData: No transaction categories found");
-          return [];
-        }
-        
-        console.log("useTransactionData: Successfully fetched categories:", data.length);
-        return data as Category[];
-      } catch (err) {
-        console.error("useTransactionData: Exception in categories fetch:", err);
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("transaction_categories")
+        .select("*")
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      return data as Category[];
     },
     enabled: !!user?.id,
-    retry: 3,
-    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
-    staleTime: 5 * 60 * 1000,
   });
 
-  // Rest of the mutation functions
+  const { data: transactions = [], isLoading: transactionsLoading, error: transactionsError } = useQuery({
+    queryKey: ["transactions", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+      return data as Transaction[];
+    },
+    enabled: !!user?.id,
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TransactionStatus }) => {
       const { error } = await supabase
@@ -103,20 +66,20 @@ export const useTransactionData = () => {
         .update({ status })
         .eq("id", id);
 
-      if (error) {
-        toast({
-          title: "Error updating status",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       toast({
         title: "Status updated",
         description: "Transaction status has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating status",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -139,14 +102,7 @@ export const useTransactionData = () => {
         })
         .eq("id", id);
 
-      if (error) {
-        toast({
-          title: "Error updating VAT settings",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -154,6 +110,13 @@ export const useTransactionData = () => {
       toast({
         title: "VAT settings updated",
         description: "Transaction VAT settings have been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating VAT settings",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -165,14 +128,7 @@ export const useTransactionData = () => {
         .delete()
         .in("id", ids);
 
-      if (error) {
-        toast({
-          title: "Error deleting transactions",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -181,13 +137,23 @@ export const useTransactionData = () => {
         description: "Selected transactions have been deleted successfully.",
       });
     },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting transactions",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   return {
     parties,
     categories,
+    transactions,
+    isLoading: partiesLoading || categoriesLoading || transactionsLoading,
     partiesError,
     categoriesError,
+    transactionsError,
     updateStatusMutation,
     updateVATSettingsMutation,
     deleteTransactionsMutation,

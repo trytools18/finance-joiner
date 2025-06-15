@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NewTransactionDialog } from "@/components/transactions/NewTransactionDialog";
 import { ProfileMenu } from "@/components/profile/ProfileMenu";
@@ -17,26 +16,20 @@ import { TransactionsSection } from "./sections/TransactionsSection";
 import { useTransactionStats } from "./hooks/useTransactionStats";
 import { useRealtimeTransactions } from "./hooks/useRealtimeTransactions";
 import { RecurringTransactionDialog } from "../transactions/RecurringTransactionDialog";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { OrganizationSettings } from "../../pages/organization-settings/types";
-import type { Transaction } from "../transactions/types";
-import { useToast } from "@/hooks/use-toast";
 
 export const Dashboard = () => {
   const { user } = useAuth();
-  const { parties, categories } = useTransactionData();
+  const { parties, categories, transactions, isLoading: isDataLoading } = useTransactionData();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isError, setIsError] = useState(false);
 
   // Fetch organization settings
-  const { data: settings, isLoading: isSettingsLoading, error: settingsError } = useQuery({
+  const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["organization-settings", user?.id],
     queryFn: async () => {
-      console.log("Fetching organization settings for user:", user?.id);
       if (!user?.id) {
-        console.log("No user found, returning default settings");
         return {
           default_currency: 'USD',
           default_payment_method: 'online',
@@ -45,118 +38,40 @@ export const Dashboard = () => {
         } as OrganizationSettings;
       }
 
-      try {
-        const { data, error } = await supabase
-          .from("organization_settings")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from("organization_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-        if (error) {
-          console.error("Error fetching settings:", error);
-          throw error;
-        }
-        
-        console.log("Retrieved settings:", data);
-        if (!data) {
-          console.log("No settings found, returning default settings");
-          return {
-            default_currency: 'USD',
-            default_payment_method: 'online',
-            default_vat_rate: 0.24,
-            vat_rates: [0, 10, 24]
-          } as OrganizationSettings;
-        }
-        
-        return data as OrganizationSettings;
-      } catch (err) {
-        console.error("Error in settings fetch:", err);
-        setIsError(true);
-        toast({
-          title: "Error fetching settings",
-          description: "Could not fetch organization settings",
-          variant: "destructive"
-        });
+      if (error) throw error;
+      
+      if (!data) {
         return {
           default_currency: 'USD',
           default_payment_method: 'online',
           default_vat_rate: 0.24,
           vat_rates: [0, 10, 24]
         } as OrganizationSettings;
-      }
-    },
-    enabled: !!user?.id,
-    retry: 3,
-    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
-  });
-
-  // Fetch transactions with improved error handling and debugging
-  const { 
-    data: transactions = [], 
-    isLoading: isTransactionsLoading,
-    error: transactionsError
-  } = useQuery({
-    queryKey: ["transactions", user?.id],
-    queryFn: async () => {
-      console.log("Dashboard: Starting transaction fetch for user:", user?.id);
-      if (!user?.id) {
-        console.log("Dashboard: No user ID available");
-        return [];
       }
       
-      try {
-        console.log("Dashboard: Querying transactions table...");
-        const { data, error } = await supabase
-          .from("transactions")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("date", { ascending: false });
-
-        if (error) {
-          console.error("Dashboard: Supabase error fetching transactions:", error);
-          throw error;
-        }
-        
-        console.log("Dashboard: Successfully retrieved transactions:", data ? data.length : 0);
-        if (data && data.length > 0) {
-          console.log("Dashboard: First transaction sample:", data[0]);
-        } else {
-          console.log("Dashboard: No transactions found for user:", user.id);
-        }
-        
-        return data as Transaction[];
-      } catch (err) {
-        console.error("Dashboard: Exception in transactions fetch:", err);
-        setIsError(true);
-        toast({
-          title: "Error fetching transactions",
-          description: "Could not fetch transaction data",
-          variant: "destructive"
-        });
-        return [];
-      }
+      return data as OrganizationSettings;
     },
     enabled: !!user?.id,
-    retry: 3,
-    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
 
-  // Use our real-time hook to get updated transactions
+  // Use real-time hook to get updated transactions
   const currentTransactions = useRealtimeTransactions(user, transactions);
-  
-  console.log("Dashboard: Final transactions count:", currentTransactions?.length || 0);
 
   // Helper functions for filtering
   const getPartyName = (partyId: string | null): string => {
     if (!partyId) return 'Unknown';
-    if (!parties || parties.length === 0) return 'Loading...';
     const party = parties.find(p => p.id === partyId);
     return party ? party.name : 'Unknown';
   };
 
-  const getCategoryName = (transaction: Transaction): string => {
+  const getCategoryName = (transaction: any): string => {
     if (!transaction.category_id) return 'Uncategorized';
-    if (!categories || categories.length === 0) return 'Loading...';
     const category = categories.find(c => c.id === transaction.category_id);
     return category ? category.name : 'Uncategorized';
   };
@@ -174,17 +89,12 @@ export const Dashboard = () => {
     hasActiveFilters
   } = useTransactionFilters(currentTransactions || [], getPartyName, getCategoryName);
 
-  // Use our stats calculation hook
+  // Use stats calculation hook
   const stats = useTransactionStats(filteredTransactions || []);
 
-  const formatAmount = (amount: number) => {
-    return formatCurrency(amount, settings?.default_currency || 'USD');
-  };
+  const isLoading = isSettingsLoading || isDataLoading;
 
-  const isLoading = isSettingsLoading || isTransactionsLoading;
-  const hasError = !!settingsError || !!transactionsError || isError;
-
-  if (isLoading && !hasError) {
+  if (isLoading) {
     return <DashboardLoading />;
   }
 
@@ -249,15 +159,8 @@ export const Dashboard = () => {
       <TransactionsSection 
         filteredTransactions={filteredTransactions || []}
         currencyCode={settings?.default_currency || 'USD'}
-        isLoading={isTransactionsLoading}
+        isLoading={isDataLoading}
       />
-      
-      {hasError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> There was a problem loading your data. Please try refreshing the page.</span>
-        </div>
-      )}
     </div>
   );
 };
