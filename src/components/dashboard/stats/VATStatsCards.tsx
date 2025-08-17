@@ -1,6 +1,6 @@
 
-import { CreditCard } from "lucide-react";
-import { StatCard } from "@/components/stats/StatCard";
+import { CreditCard, Receipt, FileText } from "lucide-react";
+import { StatCardEnhanced } from "./StatCardEnhanced";
 import { formatCurrency } from "@/lib/utils";
 
 interface VATStatsProps {
@@ -21,24 +21,27 @@ export function VATStatsCards({
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <StatCard
+    <div className="grid gap-6 md:grid-cols-3">
+      <StatCardEnhanced
         title="VAT Received"
         value={formatAmount(vatReceived)}
-        icon={CreditCard}
+        icon={Receipt}
         description="Total VAT collected from completed sales"
+        variant="success"
       />
-      <StatCard
+      <StatCardEnhanced
         title="VAT Paid"
         value={formatAmount(vatPaid)}
         icon={CreditCard}
         description="Total clearable VAT paid on completed purchases"
+        variant="warning"
       />
-      <StatCard
+      <StatCardEnhanced
         title="VAT Balance"
         value={formatAmount(vatBalance)}
-        icon={CreditCard}
+        icon={FileText}
         description="Difference between VAT received and paid (completed transactions)"
+        variant={vatBalance >= 0 ? "success" : "destructive"}
       />
     </div>
   );

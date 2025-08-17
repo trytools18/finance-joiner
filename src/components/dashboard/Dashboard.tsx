@@ -13,6 +13,7 @@ import { TransactionFilters } from "../transactions/filters/TransactionFilters";
 import { FinancialStatsCards } from "./stats/FinancialStatsCards";
 import { ChartsSection } from "./sections/ChartsSection";
 import { TransactionsSection } from "./sections/TransactionsSection";
+import { VATSection } from "./sections/VATSection";
 import { useTransactionStats } from "./hooks/useTransactionStats";
 import { RecurringTransactionDialog } from "../transactions/RecurringTransactionDialog";
 import { CalendarDays, AlertCircle } from "lucide-react";
@@ -130,10 +131,14 @@ export const Dashboard = () => {
   console.log("Dashboard: Rendering main content");
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-2">
+    <div className="container mx-auto p-6 space-y-8">
+      <header className="glass-header p-6 rounded-xl mb-8">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold gradient-text animate-fade-in">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back! Here's your financial overview.</p>
+          </div>
+          <div className="flex items-center gap-3">
           <NewTransactionDialog 
             defaultPaymentMethod={settings?.default_payment_method}
             defaultVatRate={settings?.default_vat_rate}
@@ -155,11 +160,13 @@ export const Dashboard = () => {
             Manage Recurring
           </Button>
           <ProfileMenu />
+          </div>
         </div>
-      </div>
+      </header>
       
       {/* Transaction Filters */}
-      <TransactionFilters
+      <div className="glass-card p-6 animate-slide-up">
+        <TransactionFilters
         dateRange={dateRange}
         setDateRange={setDateRange}
         transactionType={transactionType}
@@ -168,13 +175,25 @@ export const Dashboard = () => {
         setSearchTerm={setSearchTerm}
         hasActiveFilters={hasActiveFilters}
         clearFilters={clearFilters}
-      />
+        />
+      </div>
       
       {/* Financial Stats */}
-      <FinancialStatsCards
-        income={stats.income}
-        expenses={stats.expenses}
-        balance={stats.balance}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-foreground">Financial Overview</h2>
+        <FinancialStatsCards
+          income={stats.income}
+          expenses={stats.expenses}
+          balance={stats.balance}
+          currencyCode={settings?.default_currency || 'USD'}
+        />
+      </div>
+
+      {/* VAT Section */}
+      <VATSection
+        vatReceived={stats.vatReceived}
+        vatPaid={stats.vatPaid}
+        vatBalance={stats.vatBalance}
         currencyCode={settings?.default_currency || 'USD'}
       />
 
