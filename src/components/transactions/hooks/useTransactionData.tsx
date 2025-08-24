@@ -15,19 +15,34 @@ export const useTransactionData = () => {
   const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
     queryKey: ["transaction-parties", user?.id],
     queryFn: async () => {
-      console.log("Fetching parties for user:", user?.id);
-      console.log("Current supabase auth user:", await supabase.auth.getUser());
+      console.log("Parties Query - User ID:", user?.id);
+      
+      // Check current auth state
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      console.log("Parties Query - Auth Data:", { 
+        user: authData?.user?.id, 
+        error: authError,
+        isAuthenticated: !!authData?.user 
+      });
+
+      if (!authData?.user) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("Parties Query - Executing query with user_id:", user!.id);
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
         .eq("user_id", user!.id)
         .order("name");
       
+      console.log("Parties Query - Raw response:", { data, error, count: data?.length });
+      
       if (error) {
         console.error("Parties fetch error:", error);
         throw error;
       }
-      console.log("Parties fetched successfully:", data?.length || 0, data);
+      
       return data as TransactionParty[];
     },
     enabled: !!user?.id,
@@ -37,19 +52,34 @@ export const useTransactionData = () => {
   const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ["transaction-categories", user?.id],
     queryFn: async () => {
-      console.log("Fetching categories for user:", user?.id);
-      console.log("Current supabase auth user:", await supabase.auth.getUser());
+      console.log("Categories Query - User ID:", user?.id);
+      
+      // Check current auth state
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      console.log("Categories Query - Auth Data:", { 
+        user: authData?.user?.id, 
+        error: authError,
+        isAuthenticated: !!authData?.user 
+      });
+
+      if (!authData?.user) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("Categories Query - Executing query with user_id:", user!.id);
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*")
         .eq("user_id", user!.id)
         .order("name");
       
+      console.log("Categories Query - Raw response:", { data, error, count: data?.length });
+      
       if (error) {
         console.error("Categories fetch error:", error);
         throw error;
       }
-      console.log("Categories fetched successfully:", data?.length || 0, data);
+      
       return data as Category[];
     },
     enabled: !!user?.id,
@@ -59,19 +89,34 @@ export const useTransactionData = () => {
   const { data: transactions = [], isLoading: transactionsLoading, error: transactionsError } = useQuery({
     queryKey: ["transactions", user?.id],
     queryFn: async () => {
-      console.log("Fetching transactions for user:", user?.id);
-      console.log("Current supabase auth user:", await supabase.auth.getUser());
+      console.log("Transactions Query - User ID:", user?.id);
+      
+      // Check current auth state
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      console.log("Transactions Query - Auth Data:", { 
+        user: authData?.user?.id, 
+        error: authError,
+        isAuthenticated: !!authData?.user 
+      });
+
+      if (!authData?.user) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("Transactions Query - Executing query with user_id:", user!.id);
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
         .eq("user_id", user!.id)
         .order("date", { ascending: false });
 
+      console.log("Transactions Query - Raw response:", { data, error, count: data?.length });
+
       if (error) {
         console.error("Transactions fetch error:", error);
         throw error;
       }
-      console.log("Transactions fetched successfully:", data?.length || 0, data);
+      
       return data as Transaction[];
     },
     enabled: !!user?.id,
