@@ -16,6 +16,7 @@ export const useTransactionData = () => {
     queryKey: ["transaction-parties", user?.id],
     queryFn: async () => {
       console.log("Fetching parties for user:", user?.id);
+      console.log("Current supabase auth user:", await supabase.auth.getUser());
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
@@ -26,7 +27,7 @@ export const useTransactionData = () => {
         console.error("Parties fetch error:", error);
         throw error;
       }
-      console.log("Parties fetched successfully:", data?.length || 0);
+      console.log("Parties fetched successfully:", data?.length || 0, data);
       return data as TransactionParty[];
     },
     enabled: !!user?.id,
@@ -37,6 +38,7 @@ export const useTransactionData = () => {
     queryKey: ["transaction-categories", user?.id],
     queryFn: async () => {
       console.log("Fetching categories for user:", user?.id);
+      console.log("Current supabase auth user:", await supabase.auth.getUser());
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*")
@@ -47,7 +49,7 @@ export const useTransactionData = () => {
         console.error("Categories fetch error:", error);
         throw error;
       }
-      console.log("Categories fetched successfully:", data?.length || 0);
+      console.log("Categories fetched successfully:", data?.length || 0, data);
       return data as Category[];
     },
     enabled: !!user?.id,
@@ -58,6 +60,7 @@ export const useTransactionData = () => {
     queryKey: ["transactions", user?.id],
     queryFn: async () => {
       console.log("Fetching transactions for user:", user?.id);
+      console.log("Current supabase auth user:", await supabase.auth.getUser());
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
@@ -68,7 +71,7 @@ export const useTransactionData = () => {
         console.error("Transactions fetch error:", error);
         throw error;
       }
-      console.log("Transactions fetched successfully:", data?.length || 0);
+      console.log("Transactions fetched successfully:", data?.length || 0, data);
       return data as Transaction[];
     },
     enabled: !!user?.id,
