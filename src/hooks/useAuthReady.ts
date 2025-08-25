@@ -16,12 +16,15 @@ export function useAuthReady() {
     // Get initial session
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
-      setUserId(data.session?.user?.id ?? null);
+      const user = data.session?.user;
+      console.log("useAuthReady: Initial session check", { user: !!user, userId: user?.id });
+      setUserId(user?.id ?? null);
       setIsReady(true);
     });
 
     // Subscribe to auth state changes
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("useAuthReady: Auth state change", { event, user: !!session?.user, userId: session?.user?.id });
       setUserId(session?.user?.id ?? null);
       setIsReady(true);
     });
@@ -32,5 +35,6 @@ export function useAuthReady() {
     };
   }, []);
 
+  console.log("useAuthReady: Returning state", { userId, isReady });
   return { userId, isReady };
 }

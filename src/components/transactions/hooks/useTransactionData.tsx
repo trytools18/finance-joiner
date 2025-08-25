@@ -11,23 +11,28 @@ export const useTransactionData = () => {
   const { userId, isReady } = useAuthReady();
 
   console.log("useTransactionData: Starting with user:", userId, "isReady:", isReady);
+  console.log("useTransactionData: Query conditions - userId exists:", !!userId, "isReady:", isReady, "enabled:", isReady && !!userId);
 
   const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
     queryKey: ["transaction-parties", userId],
     enabled: isReady && !!userId,
     retry: 3,
+    retryDelay: 1000,
     queryFn: async () => {
-      console.log("Parties Query - Running for:", userId);
+      console.log("Parties Query - EXECUTING for userId:", userId, "isReady:", isReady);
+      if (!userId) {
+        throw new Error("No user ID available for parties query");
+      }
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
-        .eq("user_id", userId as string)
+        .eq("user_id", userId)
         .order("name");
       if (error) {
         console.error("Parties query error:", error);
         throw error;
       }
-      console.log("Parties fetched:", data?.length || 0);
+      console.log("Parties fetched successfully:", data?.length || 0, "items");
       return data as TransactionParty[];
     },
   });
@@ -36,18 +41,22 @@ export const useTransactionData = () => {
     queryKey: ["transaction-categories", userId],
     enabled: isReady && !!userId,
     retry: 3,
+    retryDelay: 1000,
     queryFn: async () => {
-      console.log("Categories Query - Running for:", userId);
+      console.log("Categories Query - EXECUTING for userId:", userId, "isReady:", isReady);
+      if (!userId) {
+        throw new Error("No user ID available for categories query");
+      }
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*")
-        .eq("user_id", userId as string)
+        .eq("user_id", userId)
         .order("name");
       if (error) {
         console.error("Categories query error:", error);
         throw error;
       }
-      console.log("Categories fetched:", data?.length || 0);
+      console.log("Categories fetched successfully:", data?.length || 0, "items");
       return data as Category[];
     },
   });
@@ -56,18 +65,22 @@ export const useTransactionData = () => {
     queryKey: ["transactions", userId],
     enabled: isReady && !!userId,
     retry: 3,
+    retryDelay: 1000,
     queryFn: async () => {
-      console.log("Transactions Query - Running for:", userId);
+      console.log("Transactions Query - EXECUTING for userId:", userId, "isReady:", isReady);
+      if (!userId) {
+        throw new Error("No user ID available for transactions query");
+      }
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", userId as string)
+        .eq("user_id", userId)
         .order("date", { ascending: false });
       if (error) {
         console.error("Transactions query error:", error);
         throw error;
       }
-      console.log("Transactions fetched:", data?.length || 0);
+      console.log("Transactions fetched successfully:", data?.length || 0, "items");
       return data as Transaction[];
     },
   });
