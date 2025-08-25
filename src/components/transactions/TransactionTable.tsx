@@ -102,7 +102,16 @@ export const TransactionTable = ({
   const getCategoryName = (transaction: Transaction) => {
     if (!transaction.category_id) return "-";
     const category = categories.find(c => c.id === transaction.category_id);
-    return category?.name || "-";
+    
+    // Debug logging to help identify category matching issues
+    if (!category && transaction.category_id) {
+      console.log(`Category not found for transaction ${transaction.id}:`, {
+        categoryId: transaction.category_id,
+        availableCategories: categories.map(c => ({ id: c.id, name: c.name }))
+      });
+    }
+    
+    return category?.name || "Uncategorized";
   };
 
   const {
