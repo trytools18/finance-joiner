@@ -10,12 +10,12 @@ export const useTransactionData = () => {
   const { toast } = useToast();
   const { userId, isReady } = useAuthReady();
 
-  console.log("useTransactionData: Starting with user:", userId);
+  console.log("useTransactionData: Starting with user:", userId, "isReady:", isReady);
 
   const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
     queryKey: ["transaction-parties", userId],
     enabled: isReady && !!userId,
-    retry: 1,
+    retry: 3,
     queryFn: async () => {
       console.log("Parties Query - Running for:", userId);
       const { data, error } = await supabase
@@ -23,7 +23,11 @@ export const useTransactionData = () => {
         .select("*")
         .eq("user_id", userId as string)
         .order("name");
-      if (error) throw error;
+      if (error) {
+        console.error("Parties query error:", error);
+        throw error;
+      }
+      console.log("Parties fetched:", data?.length || 0);
       return data as TransactionParty[];
     },
   });
@@ -31,7 +35,7 @@ export const useTransactionData = () => {
   const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ["transaction-categories", userId],
     enabled: isReady && !!userId,
-    retry: 1,
+    retry: 3,
     queryFn: async () => {
       console.log("Categories Query - Running for:", userId);
       const { data, error } = await supabase
@@ -39,7 +43,11 @@ export const useTransactionData = () => {
         .select("*")
         .eq("user_id", userId as string)
         .order("name");
-      if (error) throw error;
+      if (error) {
+        console.error("Categories query error:", error);
+        throw error;
+      }
+      console.log("Categories fetched:", data?.length || 0);
       return data as Category[];
     },
   });
@@ -47,7 +55,7 @@ export const useTransactionData = () => {
   const { data: transactions = [], isLoading: transactionsLoading, error: transactionsError } = useQuery({
     queryKey: ["transactions", userId],
     enabled: isReady && !!userId,
-    retry: 1,
+    retry: 3,
     queryFn: async () => {
       console.log("Transactions Query - Running for:", userId);
       const { data, error } = await supabase
@@ -55,7 +63,11 @@ export const useTransactionData = () => {
         .select("*")
         .eq("user_id", userId as string)
         .order("date", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error("Transactions query error:", error);
+        throw error;
+      }
+      console.log("Transactions fetched:", data?.length || 0);
       return data as Transaction[];
     },
   });

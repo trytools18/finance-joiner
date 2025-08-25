@@ -69,7 +69,7 @@ export default function RecurringTransactions() {
         <Alert className="bg-blue-50 border-blue-200">
           <InfoIcon className="h-4 w-4 text-blue-500" />
           <AlertDescription className="text-blue-700">
-            Currently showing a preview of recent transactions. Full recurring transaction functionality coming soon.
+            All transactions (including recurring ones) are now shown in the main transactions page. Use the button above to create new recurring transaction patterns.
           </AlertDescription>
         </Alert>
 
