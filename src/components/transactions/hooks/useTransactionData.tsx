@@ -3,124 +3,61 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TransactionParty, Category, Transaction, TransactionStatus } from "../types";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthReady } from "@/hooks/useAuthReady";
 
 export const useTransactionData = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { userId, isReady } = useAuthReady();
 
-  console.log("useTransactionData: Starting with user:", user?.id);
+  console.log("useTransactionData: Starting with user:", userId);
 
   const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
-    queryKey: ["transaction-parties", user?.id],
+    queryKey: ["transaction-parties", userId],
+    enabled: isReady && !!userId,
+    retry: 1,
     queryFn: async () => {
-      console.log("Parties Query - User ID:", user?.id);
-      
-      // Check current auth state
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      console.log("Parties Query - Auth Data:", { 
-        user: authData?.user?.id, 
-        error: authError,
-        isAuthenticated: !!authData?.user 
-      });
-
-      if (!authData?.user) {
-        throw new Error("User not authenticated");
-      }
-
-      console.log("Parties Query - Executing query with user_id:", user!.id);
+      console.log("Parties Query - Running for:", userId);
       const { data, error } = await supabase
         .from("transaction_parties")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", userId as string)
         .order("name");
-      
-      console.log("Parties Query - Raw response:", { data, error, count: data?.length });
-      
-      if (error) {
-        console.error("Parties fetch error:", error);
-        throw error;
-      }
-      
+      if (error) throw error;
       return data as TransactionParty[];
     },
-    enabled: !!user?.id,
-    retry: 1,
   });
 
   const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
-    queryKey: ["transaction-categories", user?.id],
+    queryKey: ["transaction-categories", userId],
+    enabled: isReady && !!userId,
+    retry: 1,
     queryFn: async () => {
-      console.log("Categories Query - User ID:", user?.id);
-      
-      // Check current auth state
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      console.log("Categories Query - Auth Data:", { 
-        user: authData?.user?.id, 
-        error: authError,
-        isAuthenticated: !!authData?.user 
-      });
-
-      if (!authData?.user) {
-        throw new Error("User not authenticated");
-      }
-
-      console.log("Categories Query - Executing query with user_id:", user!.id);
+      console.log("Categories Query - Running for:", userId);
       const { data, error } = await supabase
         .from("transaction_categories")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", userId as string)
         .order("name");
-      
-      console.log("Categories Query - Raw response:", { data, error, count: data?.length });
-      
-      if (error) {
-        console.error("Categories fetch error:", error);
-        throw error;
-      }
-      
+      if (error) throw error;
       return data as Category[];
     },
-    enabled: !!user?.id,
-    retry: 1,
   });
 
   const { data: transactions = [], isLoading: transactionsLoading, error: transactionsError } = useQuery({
-    queryKey: ["transactions", user?.id],
+    queryKey: ["transactions", userId],
+    enabled: isReady && !!userId,
+    retry: 1,
     queryFn: async () => {
-      console.log("Transactions Query - User ID:", user?.id);
-      
-      // Check current auth state
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      console.log("Transactions Query - Auth Data:", { 
-        user: authData?.user?.id, 
-        error: authError,
-        isAuthenticated: !!authData?.user 
-      });
-
-      if (!authData?.user) {
-        throw new Error("User not authenticated");
-      }
-
-      console.log("Transactions Query - Executing query with user_id:", user!.id);
+      console.log("Transactions Query - Running for:", userId);
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", userId as string)
         .order("date", { ascending: false });
-
-      console.log("Transactions Query - Raw response:", { data, error, count: data?.length });
-
-      if (error) {
-        console.error("Transactions fetch error:", error);
-        throw error;
-      }
-      
+      if (error) throw error;
       return data as Transaction[];
     },
-    enabled: !!user?.id,
-    retry: 1,
   });
 
   const isLoading = partiesLoading || categoriesLoading || transactionsLoading;
@@ -140,12 +77,12 @@ export const useTransactionData = () => {
         .from("transactions")
         .update({ status })
         .eq("id", id)
-        .eq("user_id", user!.id);
+         .eq("user_id", userId as string);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
+       queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
       toast({
         title: "Status updated",
         description: "Transaction status has been updated successfully.",
@@ -177,13 +114,13 @@ export const useTransactionData = () => {
           description 
         })
         .eq("id", id)
-        .eq("user_id", user!.id);
+         .eq("user_id", userId as string);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["vat-summary", user?.id] });
+       queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
+       queryClient.invalidateQueries({ queryKey: ["vat-summary", userId] });
       toast({
         title: "VAT settings updated",
         description: "Transaction VAT settings have been updated successfully.",
@@ -204,12 +141,12 @@ export const useTransactionData = () => {
         .from("transactions")
         .delete()
         .in("id", ids)
-        .eq("user_id", user!.id);
+        .eq("user_id", userId as string);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
       toast({
         title: "Transactions deleted",
         description: "Selected transactions have been deleted successfully.",
