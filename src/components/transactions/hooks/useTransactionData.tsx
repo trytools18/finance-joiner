@@ -23,17 +23,27 @@ export const useTransactionData = () => {
       if (!userId) {
         throw new Error("No user ID available for parties query");
       }
-      const { data, error } = await supabase
-        .from("transaction_parties")
-        .select("*")
-        .eq("user_id", userId)
-        .order("name");
-      if (error) {
-        console.error("Parties query error:", error);
-        throw error;
+      
+      try {
+        const { data, error } = await supabase
+          .from("transaction_parties")
+          .select("*")
+          .eq("user_id", userId)
+          .order("name");
+        
+        console.log("Parties Query - Raw response:", { data, error, dataLength: data?.length });
+        
+        if (error) {
+          console.error("Parties query error:", error);
+          throw error;
+        }
+        
+        console.log("Parties fetched successfully:", data?.length || 0, "items", data);
+        return data as TransactionParty[];
+      } catch (err) {
+        console.error("Parties Query - Unexpected error:", err);
+        throw err;
       }
-      console.log("Parties fetched successfully:", data?.length || 0, "items");
-      return data as TransactionParty[];
     },
   });
 
@@ -47,17 +57,27 @@ export const useTransactionData = () => {
       if (!userId) {
         throw new Error("No user ID available for categories query");
       }
-      const { data, error } = await supabase
-        .from("transaction_categories")
-        .select("*")
-        .eq("user_id", userId)
-        .order("name");
-      if (error) {
-        console.error("Categories query error:", error);
-        throw error;
+      
+      try {
+        const { data, error } = await supabase
+          .from("transaction_categories")
+          .select("*")
+          .eq("user_id", userId)
+          .order("name");
+        
+        console.log("Categories Query - Raw response:", { data, error, dataLength: data?.length });
+        
+        if (error) {
+          console.error("Categories query error:", error);
+          throw error;
+        }
+        
+        console.log("Categories fetched successfully:", data?.length || 0, "items", data);
+        return data as Category[];
+      } catch (err) {
+        console.error("Categories Query - Unexpected error:", err);
+        throw err;
       }
-      console.log("Categories fetched successfully:", data?.length || 0, "items");
-      return data as Category[];
     },
   });
 
@@ -71,17 +91,27 @@ export const useTransactionData = () => {
       if (!userId) {
         throw new Error("No user ID available for transactions query");
       }
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", userId)
-        .order("date", { ascending: false });
-      if (error) {
-        console.error("Transactions query error:", error);
-        throw error;
+      
+      try {
+        const { data, error } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("user_id", userId)
+          .order("date", { ascending: false });
+        
+        console.log("Transactions Query - Raw response:", { data, error, dataLength: data?.length });
+        
+        if (error) {
+          console.error("Transactions query error:", error);
+          throw error;
+        }
+        
+        console.log("Transactions fetched successfully:", data?.length || 0, "items", data);
+        return data as Transaction[];
+      } catch (err) {
+        console.error("Transactions Query - Unexpected error:", err);
+        throw err;
       }
-      console.log("Transactions fetched successfully:", data?.length || 0, "items");
-      return data as Transaction[];
     },
   });
 
