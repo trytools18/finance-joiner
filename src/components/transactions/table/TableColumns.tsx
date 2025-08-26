@@ -4,6 +4,8 @@ import { Column, Transaction } from "../types";
 import { StatusCell } from "./StatusCell";
 import { TransactionDetailsDialog } from "../TransactionDetailsDialog";
 import { useState } from "react";
+import { Repeat } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const createTableColumns = (
   getPartyName: (partyId: string | null) => string,
@@ -55,9 +57,23 @@ export const createTableColumns = (
       id: 'description',
       label: 'Description',
       render: (transaction) => (
-        <span className="max-w-xs truncate">
-          {transaction.description || '-'}
-        </span>
+        <div className="flex items-center gap-2 max-w-xs">
+          <span className="truncate">
+            {transaction.description || '-'}
+          </span>
+          {transaction.recurring_transaction_id && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Repeat className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Recurring Transaction</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       ),
     },
     {
