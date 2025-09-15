@@ -159,6 +159,18 @@ export function TransactionFormFields({
             ))}
           </SelectContent>
         </Select>
+        {categories.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No categories found. Add them in Organization Settings:
+            <a href="/organization-settings" className="underline ml-1">Add categories</a>
+          </p>
+        )}
+        {categories.length > 0 && filteredCategories.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No categories for {selectedType}. Switch Type or
+            <a href="/organization-settings" className="underline ml-1">add a category</a>.
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -192,6 +204,12 @@ export function TransactionFormFields({
             ))}
           </SelectContent>
         </Select>
+        {parties.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No transaction parties found.
+            <a href="/organization-settings" className="underline ml-1">Add a party</a>
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
