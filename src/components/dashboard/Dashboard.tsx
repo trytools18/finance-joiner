@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,8 @@ import type { OrganizationSettings } from "../../pages/organization-settings/typ
 export const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [longLoading, setLongLoading] = useState(false);
 
   console.log("Dashboard: Rendering with user:", user?.id);
 
@@ -96,6 +98,16 @@ export const Dashboard = () => {
 
   const isLoading = isSettingsLoading || isDataLoading;
 
+  // Show a long-loading fallback after 8s
+  useEffect(() => {
+    if (isLoading) {
+      const t = setTimeout(() => setLongLoading(true), 8000);
+      return () => clearTimeout(t);
+    } else {
+      setLongLoading(false);
+    }
+  }, [isLoading]);
+
   console.log("Dashboard: Final loading state:", {
     isSettingsLoading,
     isDataLoading,
@@ -106,9 +118,31 @@ export const Dashboard = () => {
   });
 
   // Show loading screen
-  if (isLoading) {
+  if (isLoading && !longLoading) {
     console.log("Dashboard: Showing loading screen");
     return <DashboardLoading />;
+  }
+
+  // Long loading fallback with Retry
+  if (isLoading && longLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="glass-card p-6 rounded-xl flex flex-col items-center gap-3">
+          <p className="text-muted-foreground">This is taking longer than expected.</p>
+          <Button
+            variant="default"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["organization-settings", user?.id] });
+              queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
+              queryClient.invalidateQueries({ queryKey: ["transaction-parties", user?.id] });
+              queryClient.invalidateQueries({ queryKey: ["transaction-categories", user?.id] });
+            }}
+          >
+            Retry loading data
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   // Show error if there are data errors
@@ -209,7 +243,7 @@ export const Dashboard = () => {
       <TransactionsSection 
         filteredTransactions={filteredTransactions || []}
         currencyCode={settings?.default_currency || 'USD'}
-        isLoading={false}
+        isLoading={isDataLoading}
       />
     </div>
   );
