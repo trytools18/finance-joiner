@@ -10,121 +10,71 @@ export const useTransactionData = () => {
   const { toast } = useToast();
   const { userId, isReady } = useAuthReady();
 
-  console.log("useTransactionData: Starting with user:", userId, "isReady:", isReady);
-  console.log("useTransactionData: Query conditions - userId exists:", !!userId, "isReady:", isReady, "enabled:", isReady && !!userId);
-
   const { data: parties = [], isLoading: partiesLoading, error: partiesError } = useQuery({
     queryKey: ["transaction-parties", userId],
     enabled: isReady && !!userId,
-    retry: 3,
-    retryDelay: 1000,
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     queryFn: async () => {
-      console.log("Parties Query - EXECUTING for userId:", userId, "isReady:", isReady);
       if (!userId) {
         throw new Error("No user ID available for parties query");
       }
       
-      try {
-        const { data, error } = await supabase
-          .from("transaction_parties")
-          .select("*")
-          .eq("user_id", userId)
-          .order("name");
-        
-        console.log("Parties Query - Raw response:", { data, error, dataLength: data?.length });
-        
-        if (error) {
-          console.error("Parties query error:", error);
-          throw error;
-        }
-        
-        console.log("Parties fetched successfully:", data?.length || 0, "items", data);
-        return data as TransactionParty[];
-      } catch (err) {
-        console.error("Parties Query - Unexpected error:", err);
-        throw err;
-      }
+      const { data, error } = await supabase
+        .from("transaction_parties")
+        .select("*")
+        .eq("user_id", userId)
+        .order("name");
+      
+      if (error) throw error;
+      return data as TransactionParty[];
     },
   });
 
   const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ["transaction-categories", userId],
     enabled: isReady && !!userId,
-    retry: 3,
-    retryDelay: 1000,
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     queryFn: async () => {
-      console.log("Categories Query - EXECUTING for userId:", userId, "isReady:", isReady);
       if (!userId) {
         throw new Error("No user ID available for categories query");
       }
       
-      try {
-        const { data, error } = await supabase
-          .from("transaction_categories")
-          .select("*")
-          .eq("user_id", userId)
-          .order("name");
-        
-        console.log("Categories Query - Raw response:", { data, error, dataLength: data?.length });
-        
-        if (error) {
-          console.error("Categories query error:", error);
-          throw error;
-        }
-        
-        console.log("Categories fetched successfully:", data?.length || 0, "items", data);
-        return data as Category[];
-      } catch (err) {
-        console.error("Categories Query - Unexpected error:", err);
-        throw err;
-      }
+      const { data, error } = await supabase
+        .from("transaction_categories")
+        .select("*")
+        .eq("user_id", userId)
+        .order("name");
+      
+      if (error) throw error;
+      return data as Category[];
     },
   });
 
   const { data: transactions = [], isLoading: transactionsLoading, error: transactionsError } = useQuery({
     queryKey: ["transactions", userId],
     enabled: isReady && !!userId,
-    retry: 3,
-    retryDelay: 1000,
+    retry: 2,
+    staleTime: 1000 * 60, // Consider data fresh for 1 minute
     queryFn: async () => {
-      console.log("Transactions Query - EXECUTING for userId:", userId, "isReady:", isReady);
       if (!userId) {
         throw new Error("No user ID available for transactions query");
       }
       
-      try {
-        const { data, error } = await supabase
-          .from("transactions")
-          .select("*")
-          .eq("user_id", userId)
-          .order("date", { ascending: false });
-        
-        console.log("Transactions Query - Raw response:", { data, error, dataLength: data?.length });
-        
-        if (error) {
-          console.error("Transactions query error:", error);
-          throw error;
-        }
-        
-        console.log("Transactions fetched successfully:", data?.length || 0, "items", data);
-        return data as Transaction[];
-      } catch (err) {
-        console.error("Transactions Query - Unexpected error:", err);
-        throw err;
-      }
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false });
+      
+      if (error) throw error;
+      return data as Transaction[];
     },
   });
 
   const isLoading = partiesLoading || categoriesLoading || transactionsLoading;
   const hasError = partiesError || categoriesError || transactionsError;
-
-  console.log("useTransactionData: Final state:", {
-    isLoading,
-    hasError: !!hasError,
-    partiesCount: parties.length,
-    categoriesCount: categories.length,
-    transactionsCount: transactions.length
-  });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TransactionStatus }) => {

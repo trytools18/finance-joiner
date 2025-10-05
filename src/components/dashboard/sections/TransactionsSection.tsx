@@ -16,11 +16,9 @@ export function TransactionsSection({
 }: TransactionsSectionProps) {
   // Add debugging to track filtered transactions
   useEffect(() => {
-    console.log("TransactionsSection: Received transactions:", {
-      count: filteredTransactions?.length || 0,
-      isLoading,
-      sampleTransaction: filteredTransactions?.[0]?.id || 'none'
-    });
+    if (!isLoading && filteredTransactions?.length === 0) {
+      console.log("TransactionsSection: No transactions after filtering");
+    }
   }, [filteredTransactions, isLoading]);
   return <div className="space-y-4">
       <div className="flex items-center justify-between">

@@ -12,6 +12,7 @@ import { TransactionFormFields } from "./TransactionFormFields";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TransactionParty, Category, PaymentMethod, Transaction, TransactionStatus, RecurrenceType, RecurringTransactionStatus, RecurringTransactionDialogProps } from "./types";
+import { useTransactionData } from "./hooks/useTransactionData";
 
 export function RecurringTransactionDialog({
   defaultPaymentMethod = "online",
@@ -37,52 +38,12 @@ export function RecurringTransactionDialog({
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
   const [intervalValue, setIntervalValue] = useState<string>("1");
   const [occurrences, setOccurrences] = useState<string>("12");
-  const [parties, setParties] = useState<TransactionParty[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  // Fetch parties and categories
-  useEffect(() => {
-    const fetchData = async () => {
-      // Fetch transaction parties
-      const { data: partiesData, error: partiesError } = await supabase
-        .from("transaction_parties")
-        .select("*")
-        .order("name");
-      
-      if (partiesError) {
-        toast({
-          title: "Error fetching parties",
-          description: partiesError.message,
-          variant: "destructive",
-        });
-      } else {
-        setParties(partiesData as TransactionParty[]);
-      }
-
-      // Fetch transaction categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from("transaction_categories")
-        .select("*")
-        .order("name");
-      
-      if (categoriesError) {
-        toast({
-          title: "Error fetching categories",
-          description: categoriesError.message,
-          variant: "destructive",
-        });
-      } else {
-        setCategories(categoriesData as Category[]);
-      }
-    };
-
-    if (open) {
-      fetchData();
-    }
-  }, [open, toast]);
+  // Use the centralized data hook instead of local fetching
+  const { parties, categories, isLoading } = useTransactionData();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -239,6 +200,21 @@ export function RecurringTransactionDialog({
             This will create multiple future transactions that will appear with "pending" status. You can review and approve them later.
           </AlertDescription>
         </Alert>
+
+        {isLoading ? (
+          <div className="py-8 text-center text-muted-foreground">
+            Loading categories and parties...
+          </div>
+        ) : (categories?.length === 0 || parties?.length === 0) ? (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {categories?.length === 0 && "No categories found. "}
+              {parties?.length === 0 && "No transaction parties found. "}
+              Please add them in <a href="/organization-settings" className="underline">Organization Settings</a> first.
+            </AlertDescription>
+          </Alert>
+        ) : null}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -314,8 +290,8 @@ export function RecurringTransactionDialog({
           <TransactionFormFields
             date={date}
             setDate={setDate}
-            categories={categories}
-            parties={parties}
+            categories={categories || []}
+            parties={parties || []}
             defaultPaymentMethod={defaultPaymentMethod as PaymentMethod}
             defaultVatRate={defaultVatRate}
             vatRates={vatRates}
@@ -330,7 +306,10 @@ export function RecurringTransactionDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">
+            <Button 
+              type="submit"
+              disabled={isLoading || categories?.length === 0 || parties?.length === 0}
+            >
               Create Recurring Transactions
             </Button>
           </div>

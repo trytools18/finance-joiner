@@ -26,12 +26,10 @@ export const TableContent = ({
     return selectedTransactions.some(t => t.id === transaction.id);
   };
 
-  // Add debugging to help identify why transactions might not be showing
+  // Add debugging to help identify issues with transactions rendering
   useEffect(() => {
-    console.log("TableContent received transactions:", transactions);
-    console.log("Number of transactions:", transactions?.length || 0);
     if (transactions && transactions.length > 0) {
-      console.log("First transaction sample:", transactions[0]);
+      console.log("TableContent: Rendering", transactions.length, "transactions");
     }
   }, [transactions]);
 
